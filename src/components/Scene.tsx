@@ -1,6 +1,6 @@
 import { useRef, useMemo, useEffect, useState, Suspense } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { Html, useCursor, useGLTF, Environment, MeshReflectorMaterial, Sparkles, ContactShadows } from "@react-three/drei"
+import { Html, useCursor, useGLTF, Environment, Sparkles, ContactShadows } from "@react-three/drei"
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing"
 import * as THREE from "three"
 import { button, folder, useControls } from "leva"
@@ -29,7 +29,6 @@ const CARTRIDGE_FACE_ROTATION = Math.PI / 2
 const CAROUSEL_GAP = 4.15
 const CAROUSEL_DEPTH_STEP = 0.52
 const REFLECTION_LAYER = 1
-const FLOOR_LAYER = 2
 
 function getOrbitPosition(yaw: number, pitch: number, radius: number, targetY: number): [number, number, number] {
   const cosPitch = Math.cos(pitch)
@@ -360,21 +359,9 @@ function InspectScene({ game }: { game: Game }) {
 
 function Floor() {
   const tweaks = useStore((s) => s.sceneTweaks)
-  const meshRef = useRef<THREE.Mesh>(null)
-
-  useEffect(() => {
-    if (!meshRef.current) return
-    if (tweaks.floorReflectionSource === "flat") {
-      meshRef.current.layers.set(FLOOR_LAYER)
-    } else {
-      meshRef.current.layers.enable(0)
-      meshRef.current.layers.enable(FLOOR_LAYER)
-    }
-  }, [tweaks.floorReflectionSource])
-
   return (
     <>
-      <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
         <planeGeometry args={[80, 42]} />
         <LayeredReflectorMaterial
           includeEnvironment={tweaks.floorReflectionSource === "environment"}
@@ -434,16 +421,6 @@ function CameraController({ inspectMode }: { inspectMode: boolean }) {
     const targetLook = inspectMode ? new THREE.Vector3(0, 0.35, 0) : new THREE.Vector3(0, 1.3, 0)
     camera.lookAt(targetLook)
   })
-  return null
-}
-
-function SceneLayerController() {
-  const camera = useThree((state) => state.camera)
-
-  useEffect(() => {
-    camera.layers.enable(FLOOR_LAYER)
-  }, [camera])
-
   return null
 }
 
@@ -685,7 +662,6 @@ function SceneContent() {
         environmentRotation={[0, sceneTweaks.environmentRotationY, 0]}
       />
 
-      <SceneLayerController />
       <ToneMappingController />
       <CameraController inspectMode={inspectMode} />
       <Floor />
