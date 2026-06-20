@@ -1,6 +1,6 @@
 import { useRef, useMemo, useEffect, useState, Suspense } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { Html, useCursor, useGLTF, Environment, Sparkles, ContactShadows } from "@react-three/drei"
+import { Html, useCursor, useGLTF, useTexture, Environment, Sparkles, ContactShadows } from "@react-three/drei"
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing"
 import { CameraMotionBlur } from "./CameraMotionBlur"
 import * as THREE from "three"
@@ -45,12 +45,8 @@ function getOrbitPosition(yaw: number, pitch: number, radius: number, targetY: n
 /* ================================================================== */
 
 function useFlippedTexture(url: string): THREE.Texture {
-  const texture = useMemo(() => {
-    const loader = new THREE.TextureLoader()
-    loader.setCrossOrigin("anonymous")
-    return loader.load(url)
-  }, [url])
-  useMemo(() => {
+  const texture = useTexture(url)
+  useEffect(() => {
     texture.flipY = false
     texture.colorSpace = THREE.SRGBColorSpace
     texture.anisotropy = 8
@@ -60,12 +56,8 @@ function useFlippedTexture(url: string): THREE.Texture {
 }
 
 function useFlippedDataTexture(url: string): THREE.Texture {
-  const texture = useMemo(() => {
-    const loader = new THREE.TextureLoader()
-    loader.setCrossOrigin("anonymous")
-    return loader.load(url)
-  }, [url])
-  useMemo(() => {
+  const texture = useTexture(url)
+  useEffect(() => {
     texture.flipY = false
     texture.anisotropy = 8
     texture.needsUpdate = true
