@@ -121,7 +121,17 @@ export function proxify(url: string): string {
   try {
     const parsed = new URL(url)
     const path = parsed.pathname.startsWith('/api2') ? parsed.pathname : `/api2${parsed.pathname}`
-    return `${path}${parsed.search}`
+
+    // Inject current credentials into the media URL so empty ones get replaced
+    const creds = getCredentials()
+    const params = new URLSearchParams(parsed.search)
+    if (creds.devid) params.set('devid', creds.devid)
+    if (creds.devpassword) params.set('devpassword', creds.devpassword)
+    if (creds.softname) params.set('softname', creds.softname)
+    if (creds.ssid) params.set('ssid', creds.ssid)
+    if (creds.sspassword) params.set('sspassword', creds.sspassword)
+
+    return `${path}?${params.toString()}`
   } catch {
     return url
   }
