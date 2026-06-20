@@ -61,12 +61,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       ...(req.method === 'POST' && req.body ? { body: JSON.stringify(req.body) } : {}),
     })
 
-    const text = await upstream.text()
-
-    // Forward status and content type from upstream
-    const contentType = upstream.headers.get('content-type') || 'application/json'
+    const contentType = upstream.headers.get('content-type') || 'application/octet-stream'
     res.setHeader('Content-Type', contentType)
-    return res.status(upstream.status).send(text)
+    res.status(upstream.status)
+
+    // Stream binary data (images, etc.) without corrupting it
+    const buffer = Buffer.from(await upstream.arrayBuffer())
+    return res.send(buffer)
   } catch (err: any) {
     console.error('Scraper proxy error:', err)
     return res.status(502).json({ error: err.message || 'Proxy request failed' })
