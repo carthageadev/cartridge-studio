@@ -5,7 +5,7 @@ import { sortLibraryGames, type LibrarySortMode } from "./utils/library"
 import { fetchGameInfo, searchGames } from "./api/screenscraper"
 
 const NO_IMAGE_COVER = "/no-image.svg"
-const SCENE_PRESET_VERSION = 4
+const SCENE_PRESET_VERSION = 7
 
 interface SceneTweaks {
   ambientIntensity: number
@@ -478,8 +478,12 @@ export const useStore = create<Store>()(
 
         const baseState = {
           ...persistedState,
-          sceneTweaks: normalizeSceneTweaks(shouldResetScenePreset ? defaultSceneTweaks : persistedState.sceneTweaks),
-          savedSceneTweaks: normalizeSceneTweaks(shouldResetScenePreset ? defaultSceneTweaks : persistedState.savedSceneTweaks),
+          sceneTweaks: shouldResetScenePreset
+            ? normalizeSceneTweaks(persistedState.sceneTweaks)
+            : normalizeSceneTweaks(persistedState.sceneTweaks),
+          savedSceneTweaks: shouldResetScenePreset
+            ? normalizeSceneTweaks(persistedState.savedSceneTweaks)
+            : normalizeSceneTweaks(persistedState.savedSceneTweaks),
           scenePresetVersion: SCENE_PRESET_VERSION,
           levaPanelVersion: 0,
           showLeva: false,
