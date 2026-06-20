@@ -627,7 +627,7 @@ function SceneLevaControls() {
     }),
     Vignette: folder({
       vignetteEnabled: { value: sceneTweaks.vignetteEnabled, onChange: (value) => updateSceneTweaks({ vignetteEnabled: value }) },
-      vignetteIntensity: { value: sceneTweaks.vignetteIntensity, min: 0, max: 2, step: 0.01, onChange: (value) => updateSceneTweaks({ vignetteIntensity: value }) },
+      vignetteIntensity: { value: sceneTweaks.vignetteIntensity, min: 0, max: 5, step: 0.01, onChange: (value) => updateSceneTweaks({ vignetteIntensity: value }) },
     }),
     MotionBlur: folder({
       motionBlurEnabled: { value: sceneTweaks.motionBlurEnabled, onChange: (value) => updateSceneTweaks({ motionBlurEnabled: value }) },
@@ -688,7 +688,7 @@ function SceneContent() {
         />
         <Vignette
           eskil={false}
-          offset={0.18}
+          offset={0.5}
           darkness={sceneTweaks.vignetteEnabled ? sceneTweaks.vignetteIntensity : 0}
         />
         <CameraMotionBlur

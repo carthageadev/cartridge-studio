@@ -201,7 +201,7 @@ const defaultSceneTweaks: SceneTweaks = {
   bloomIntensity: 0.18,
   bloomRadius: 0.5,
   vignetteEnabled: true,
-  vignetteIntensity: 0.4,
+  vignetteIntensity: 1.2,
   motionBlurEnabled: false,
   motionBlurIntensity: 0.3,
   shadowOpacity: 1,
