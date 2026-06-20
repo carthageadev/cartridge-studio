@@ -1,5 +1,7 @@
 # Node modules and build artifacts
 node_modules/
+dist/
+.vite/
 npm-debug.log
 .DS_Store
 .env
