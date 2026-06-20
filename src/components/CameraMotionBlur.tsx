@@ -1,56 +1,47 @@
 import { useRef, useMemo } from "react"
-import { useFrame, useThree, extend } from "@react-three/fiber"
-import {
-  Effect,
-  EffectComposer,
-  Pass,
-} from "postprocessing"
-import { Camera, HalfFloatType, Uniform, Vector2, WebGLRenderTarget } from "three"
+import { useFrame, useThree } from "@react-three/fiber"
+import { Effect, EffectAttribute } from "postprocessing"
+import { Uniform, Vector2, Vector3 } from "three"
 
 /* ================================================================== */
-/*  CameraMotionBlurEffect - a lightweight velocity-based motion blur  */
-/*  that tracks camera movement between frames and applies directional */
-/*  blur in screen-space.                                             */
+/*  CameraMotionBlur - velocity-based directional blur that responds  */
+/*  to camera movement.                                               */
+/*                                                                     */
+/*  KEY: must declare CONVOLUTION attribute because this effect        */
+/*  samples inputBuffer multiple times per pixel.                     */
 /* ================================================================== */
 
-const FRAGMENT_SHADER = `
-uniform sampler2D tColor;
-uniform vec2 velocity;
-uniform float intensity;
-uniform float samples;
+const FRAGMENT = /* glsl */ `
+uniform vec2 uVelocity;
+uniform float uIntensity;
 
 void mainImage(const in vec4 inputColor, const in vec2 uv, out vec4 outputColor) {
-  vec2 vel = velocity * intensity;
-  float total = 0.0;
-  vec4 color = vec4(0.0);
+  vec2 vel = uVelocity * uIntensity * 0.05;
 
-  float s = max(1.0, samples);
-  for (float i = 0.0; i < 16.0; i++) {
-    if (i >= s) break;
-    float t = (i / s) - 0.5;
-    color += texture2D(tColor, uv + vel * t);
-    total += 1.0;
+  vec4 color = inputColor;
+  float weight = 1.0;
+
+  for (int i = 1; i <= 6; i++) {
+    float t = float(i) / 6.0;
+    color += texture2D(inputBuffer, uv - vel * t);
+    weight += 1.0;
   }
 
-  outputColor = color / total;
+  outputColor = color / weight;
 }
 `
 
-class CameraMotionBlurEffect extends Effect {
+class MotionBlurEffect extends Effect {
   constructor() {
-    super("CameraMotionBlurEffect", FRAGMENT_SHADER, {
+    super("MotionBlurEffect", FRAGMENT, {
+      attributes: EffectAttribute.CONVOLUTION,
       uniforms: new Map([
-        ["velocity", new Uniform(new Vector2(0, 0))],
-        ["intensity", new Uniform(0.3)],
-        ["samples", new Uniform(8)],
+        ["uVelocity", new Uniform(new Vector2(0, 0))],
+        ["uIntensity", new Uniform(0.3)],
       ]),
     })
   }
 }
-
-/* ================================================================== */
-/*  React component - tracks camera velocity and passes to the effect */
-/* ================================================================== */
 
 export function CameraMotionBlur({
   enabled = true,
@@ -59,30 +50,27 @@ export function CameraMotionBlur({
   enabled?: boolean
   intensity?: number
 }) {
-  const effect = useMemo(() => new CameraMotionBlurEffect(), [])
-  const prevPos = useRef(new Vector2(0, 0))
-  const { camera, size } = useThree()
+  const effect = useMemo(() => new MotionBlurEffect(), [])
+  const prevPos = useRef(new Vector3())
+  const { camera } = useThree()
+  const velocity = useRef(new Vector2(0, 0))
 
   useFrame(() => {
-    effect.uniforms.get("intensity")!.value = enabled ? intensity : 0
-
+    effect.uniforms.get("uIntensity")!.value = enabled ? intensity : 0
     if (!enabled) return
 
-    // Project camera position to screen-space velocity
     const pos = camera.position.clone()
-    const projected = pos.project(camera as Camera)
-    const screenX = (projected.x + 1) / 2
-    const screenY = (projected.y + 1) / 2
+    const projected = pos.clone().project(camera)
+    const prev = prevPos.current.clone().project(camera)
 
-    const dx = screenX - prevPos.current.x
-    const dy = screenY - prevPos.current.y
+    const dx = projected.x - prev.x
+    const dy = projected.y - prev.y
 
-    // Smooth the velocity a bit for stability
-    const vel = effect.uniforms.get("velocity")!.value as Vector2
-    vel.x = vel.x * 0.7 + dx * 0.3
-    vel.y = vel.y * 0.7 + dy * 0.3
+    velocity.current.x += (dx - velocity.current.x) * 0.2
+    velocity.current.y += (dy - velocity.current.y) * 0.2
 
-    prevPos.current.set(screenX, screenY)
+    effect.uniforms.get("uVelocity")!.value.copy(velocity.current)
+    prevPos.current.copy(camera.position)
   })
 
   return <primitive object={effect} />
