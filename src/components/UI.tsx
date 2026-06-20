@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react"
-import { useStore } from "../store"
+import { useStore, PRESETS } from "../store"
 import {
   Search, Heart, Library, Info, X, BatteryMedium, BatteryLow, BatteryFull,
   Wifi, Settings, Clock, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2
@@ -51,6 +51,7 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
   const onlyFavorites = useStore((s) => s.onlyFavorites)
   const setOnlyFavorites = useStore((s) => s.setOnlyFavorites)
   const resetSceneTweaks = useStore((s) => s.resetSceneTweaks)
+  const applyPreset = useStore((s) => s.applyPreset)
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })), 1000)
@@ -143,6 +144,23 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
             <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] divide-y divide-white/[0.06]">
               <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-white/80">High Quality Textures</span><Switch checked={settings.highQuality} onCheckedChange={(checked) => updateSettings({ highQuality: checked })} /></div>
               <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-white/80">CRT Scanline Overlay</span><Switch checked={settings.crtOverlay} onCheckedChange={(checked) => updateSettings({ crtOverlay: checked })} /></div>
+            </div>
+          </div>
+
+          {/* -- Scene Presets -- */}
+          <div className="mb-5">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Scene Presets</p>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.keys(PRESETS).map((name) => (
+                <Button
+                  key={name}
+                  variant="ghost"
+                  onClick={() => applyPreset(PRESETS[name as keyof typeof PRESETS])}
+                  className="text-xs"
+                >
+                  {name}
+                </Button>
+              ))}
             </div>
           </div>
 

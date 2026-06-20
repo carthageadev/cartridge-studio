@@ -115,6 +115,7 @@ interface Store {
   saveSceneTweaks: () => void
   revertSceneTweaks: () => void
   resetSceneTweaks: () => void
+  applyPreset: (preset: SceneTweaks) => void
   levaPanelVersion: number
   addGame: (game: Omit<Game, "id">) => void
   removeGame: (id: number) => void
@@ -199,6 +200,87 @@ const defaultSceneTweaks: SceneTweaks = {
   shadowScale: 80,
   shadowBlur: 6,
   shadowFar: 12,
+}
+
+const darkFlowPreset: SceneTweaks = { ...defaultSceneTweaks }
+
+export const PRESETS = {
+  "Dark Flow": darkFlowPreset,
+  "Glassy Flow": glassyFlowPreset,
+} as const
+
+export type PresetName = keyof typeof PRESETS
+
+const glassyFlowPreset: SceneTweaks = {
+  ...defaultSceneTweaks,
+  environmentIntensity: 0.4,
+  environmentRotationY: -0.96,
+  toneMappingExposure: 0.2,
+  ambientIntensity: 0,
+  targetCenterY: 2.67,
+  targetLowY: 2.58,
+  keyIntensity: 1.37,
+  keyYaw: 3.14,
+  keyPitch: 0.21,
+  keyRadius: 20,
+  keyPosX: 4.8,
+  keyPosY: 7.8,
+  keyPosZ: 6.8,
+  fillIntensity: 3,
+  fillPosX: -6.4,
+  fillPosY: 5.1,
+  fillPosZ: 14.4,
+  rimIntensity: 1.25,
+  rimPosX: 0,
+  rimPosY: 7.2,
+  rimPosZ: -6.2,
+  leftAccentIntensity: 0,
+  leftAccentPosX: -6.5,
+  leftAccentPosY: 1.4,
+  leftAccentPosZ: -20,
+  rightAccentIntensity: 2.98,
+  rightAccentPosX: -20,
+  rightAccentPosY: 1.1,
+  rightAccentPosZ: -20,
+  eyeLightIntensity: 0.14,
+  showEyeLight: false,
+  eyeLightDistance: 14,
+  eyeLightHeight: 2,
+  eyeLightDepth: 6.2,
+  keyAngle: 0.47,
+  keyPenumbra: 1,
+  keyDistance: 20,
+  keyDecay: 0.94,
+  fillAngle: 0.55,
+  fillPenumbra: 1,
+  fillDistance: 21,
+  fillDecay: 0,
+  rimAngle: 0.58,
+  rimPenumbra: 0.39,
+  rimDistance: 18,
+  rimDecay: 0.79,
+  floorMirror: 0,
+  floorMetalness: 0.69,
+  floorColor: "#303c49",
+  floorReflectionSource: "flat",
+  floorResolution: 640,
+  floorMixStrength: 9,
+  floorRoughness: 0,
+  floorBlurX: 0,
+  floorBlurY: 69,
+  floorDepthScale: 1.13,
+  floorMinDepthThreshold: 0.11,
+  floorMaxDepthThreshold: 1.27,
+  bodyRoughness: 0.75,
+  bodyEnvIntensity: 0.45,
+  labelRoughness: 0.21,
+  labelEnvIntensity: 1.22,
+  bloomIntensity: 0.2,
+  bloomRadius: 0.83,
+  shadowOpacity: 0,
+  shadowScale: 2,
+  shadowBlur: 0.2,
+  shadowFar: 1,
 }
 
 function normalizeSceneTweaks(tweaks?: Partial<SceneTweaks> | null): SceneTweaks {
@@ -305,6 +387,12 @@ export const useStore = create<Store>()(
       resetSceneTweaks: () => set(() => ({
         sceneTweaks: defaultSceneTweaks,
         savedSceneTweaks: defaultSceneTweaks,
+        scenePresetVersion: SCENE_PRESET_VERSION,
+        levaPanelVersion: Date.now(),
+      })),
+      applyPreset: (preset) => set(() => ({
+        sceneTweaks: normalizeSceneTweaks(preset),
+        savedSceneTweaks: normalizeSceneTweaks(preset),
         scenePresetVersion: SCENE_PRESET_VERSION,
         levaPanelVersion: Date.now(),
       })),
