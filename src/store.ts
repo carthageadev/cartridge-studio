@@ -195,10 +195,10 @@ const defaultSceneTweaks: SceneTweaks = {
   labelEnvIntensity: 1.22,
   bloomIntensity: 0.09,
   bloomRadius: 0.86,
-  shadowOpacity: 0,
-  shadowScale: 2,
-  shadowBlur: 0.2,
-  shadowFar: 1,
+  shadowOpacity: 0.4,
+  shadowScale: 40,
+  shadowBlur: 1.5,
+  shadowFar: 3,
 }
 
 function normalizeSceneTweaks(tweaks?: Partial<SceneTweaks> | null): SceneTweaks {

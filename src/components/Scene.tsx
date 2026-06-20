@@ -616,7 +616,7 @@ function SceneLevaControls() {
       floorMinDepthThreshold: { value: sceneTweaks.floorMinDepthThreshold, min: 0, max: 2, step: 0.01, onChange: (value) => updateSceneTweaks({ floorMinDepthThreshold: value }) },
       floorMaxDepthThreshold: { value: sceneTweaks.floorMaxDepthThreshold, min: 0.1, max: 3, step: 0.01, onChange: (value) => updateSceneTweaks({ floorMaxDepthThreshold: value }) },
       shadowOpacity: { value: sceneTweaks.shadowOpacity, min: 0, max: 1, step: 0.01, onChange: (value) => updateSceneTweaks({ shadowOpacity: value }) },
-      shadowScale: { value: sceneTweaks.shadowScale, min: 2, max: 16, step: 0.5, onChange: (value) => updateSceneTweaks({ shadowScale: value }) },
+      shadowScale: { value: sceneTweaks.shadowScale, min: 2, max: 80, step: 0.5, onChange: (value) => updateSceneTweaks({ shadowScale: value }) },
       shadowBlur: { value: sceneTweaks.shadowBlur, min: 0.2, max: 6, step: 0.1, onChange: (value) => updateSceneTweaks({ shadowBlur: value }) },
       shadowFar: { value: sceneTweaks.shadowFar, min: 1, max: 12, step: 0.1, onChange: (value) => updateSceneTweaks({ shadowFar: value }) },
     }),
