@@ -72,6 +72,10 @@ interface SceneTweaks {
   labelEnvIntensity: number
   bloomIntensity: number
   bloomRadius: number
+  vignetteEnabled: boolean
+  vignetteIntensity: number
+  motionBlurEnabled: boolean
+  motionBlurIntensity: number
   shadowOpacity: number
   shadowScale: number
   shadowBlur: number
@@ -196,6 +200,10 @@ const defaultSceneTweaks: SceneTweaks = {
   labelEnvIntensity: 1.22,
   bloomIntensity: 0.18,
   bloomRadius: 0.5,
+  vignetteEnabled: true,
+  vignetteIntensity: 0.4,
+  motionBlurEnabled: false,
+  motionBlurIntensity: 0.3,
   shadowOpacity: 1,
   shadowScale: 80,
   shadowBlur: 6,
@@ -270,6 +278,10 @@ const glassyFlowPreset: SceneTweaks = {
   labelEnvIntensity: 1.22,
   bloomIntensity: 0.2,
   bloomRadius: 0.83,
+  vignetteEnabled: false,
+  vignetteIntensity: 0.4,
+  motionBlurEnabled: false,
+  motionBlurIntensity: 0.3,
   shadowOpacity: 0,
   shadowScale: 2,
   shadowBlur: 0.2,

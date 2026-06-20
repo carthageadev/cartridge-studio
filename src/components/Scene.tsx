@@ -2,6 +2,7 @@ import { useRef, useMemo, useEffect, useState, Suspense } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { Html, useCursor, useGLTF, Environment, Sparkles, ContactShadows } from "@react-three/drei"
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing"
+import { CameraMotionBlur } from "./CameraMotionBlur"
 import * as THREE from "three"
 import { button, folder, useControls } from "leva"
 import { Loader2 } from "lucide-react"
@@ -624,6 +625,14 @@ function SceneLevaControls() {
       bloomIntensity: { value: sceneTweaks.bloomIntensity, min: 0, max: 1.5, step: 0.01, onChange: (value) => updateSceneTweaks({ bloomIntensity: value }) },
       bloomRadius: { value: sceneTweaks.bloomRadius, min: 0, max: 1.5, step: 0.01, onChange: (value) => updateSceneTweaks({ bloomRadius: value }) },
     }),
+    Vignette: folder({
+      vignetteEnabled: { value: sceneTweaks.vignetteEnabled, onChange: (value) => updateSceneTweaks({ vignetteEnabled: value }) },
+      vignetteIntensity: { value: sceneTweaks.vignetteIntensity, min: 0, max: 2, step: 0.01, onChange: (value) => updateSceneTweaks({ vignetteIntensity: value }) },
+    }),
+    MotionBlur: folder({
+      motionBlurEnabled: { value: sceneTweaks.motionBlurEnabled, onChange: (value) => updateSceneTweaks({ motionBlurEnabled: value }) },
+      motionBlurIntensity: { value: sceneTweaks.motionBlurIntensity, min: 0, max: 1, step: 0.01, onChange: (value) => updateSceneTweaks({ motionBlurIntensity: value }) },
+    }),
     Actions: folder({
       save: button(() => saveSceneTweaks()),
       revert: button(() => revertSceneTweaks()),
@@ -677,7 +686,15 @@ function SceneContent() {
           mipmapBlur
           radius={sceneTweaks.bloomRadius}
         />
-        <Vignette eskil={false} offset={0.18} darkness={0.4} />
+        <Vignette
+          eskil={false}
+          offset={0.18}
+          darkness={sceneTweaks.vignetteEnabled ? sceneTweaks.vignetteIntensity : 0}
+        />
+        <CameraMotionBlur
+          enabled={sceneTweaks.motionBlurEnabled}
+          intensity={sceneTweaks.motionBlurIntensity}
+        />
       </EffectComposer>
     </>
   )
