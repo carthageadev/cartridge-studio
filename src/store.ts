@@ -258,7 +258,7 @@ const glassyFlowPreset: SceneTweaks = {
   floorReflectionSource: "flat",
   floorResolution: 640,
   floorMixStrength: 9,
-  floorRoughness: 0,
+  floorRoughness: 0.1,
   floorBlurX: 0,
   floorBlurY: 69,
   floorDepthScale: 1.13,
