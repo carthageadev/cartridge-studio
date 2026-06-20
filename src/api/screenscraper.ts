@@ -2,6 +2,8 @@ export interface Credentials {
   devid: string
   devpassword: string
   softname: string
+  ssid: string
+  sspassword: string
 }
 
 export interface SearchResult {
@@ -53,6 +55,8 @@ async function ssRequest(endpoint: string, params: Record<string, string>) {
     devid: creds.devid,
     devpassword: creds.devpassword,
     softname: creds.softname,
+    ssid: creds.ssid,
+    sspassword: creds.sspassword,
     output: 'json',
     ...params,
   })
@@ -78,6 +82,8 @@ export function getDefaultCredentials(): Credentials {
     devid: import.meta.env.VITE_SCREENSCRAPER_DEV_ID ?? '',
     devpassword: import.meta.env.VITE_SCREENSCRAPER_DEV_PASSWORD ?? '',
     softname: import.meta.env.VITE_SCREENSCRAPER_SOFT_NAME ?? 'CartridgeFlow',
+    ssid: import.meta.env.VITE_SCREENSCRAPER_SS_ID ?? '',
+    sspassword: import.meta.env.VITE_SCREENSCRAPER_SS_PASSWORD ?? '',
   }
 }
 
@@ -91,6 +97,8 @@ export function getCredentials(): Credentials {
         devid: saved.devid || def.devid,
         devpassword: saved.devpassword || def.devpassword,
         softname: saved.softname || def.softname,
+        ssid: saved.ssid || def.ssid,
+        sspassword: saved.sspassword || def.sspassword,
       }
     }
   } catch {
