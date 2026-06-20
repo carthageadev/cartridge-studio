@@ -204,13 +204,6 @@ const defaultSceneTweaks: SceneTweaks = {
 
 const darkFlowPreset: SceneTweaks = { ...defaultSceneTweaks }
 
-export const PRESETS = {
-  "Dark Flow": darkFlowPreset,
-  "Glassy Flow": glassyFlowPreset,
-} as const
-
-export type PresetName = keyof typeof PRESETS
-
 const glassyFlowPreset: SceneTweaks = {
   ...defaultSceneTweaks,
   environmentIntensity: 0.4,
@@ -282,6 +275,13 @@ const glassyFlowPreset: SceneTweaks = {
   shadowBlur: 0.2,
   shadowFar: 1,
 }
+
+export const PRESETS = {
+  "Dark Flow": darkFlowPreset,
+  "Glassy Flow": glassyFlowPreset,
+} as const
+
+export type PresetName = keyof typeof PRESETS
 
 function normalizeSceneTweaks(tweaks?: Partial<SceneTweaks> | null): SceneTweaks {
   return { ...defaultSceneTweaks, ...(tweaks ?? {}) }
