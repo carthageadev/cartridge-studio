@@ -66,6 +66,7 @@ interface SceneTweaks {
   floorDepthScale: number
   floorMinDepthThreshold: number
   floorMaxDepthThreshold: number
+  floorFovMultiplier: number
   bodyRoughness: number
   bodyEnvIntensity: number
   labelRoughness: number
@@ -194,6 +195,7 @@ const defaultSceneTweaks: SceneTweaks = {
   floorDepthScale: 0.68,
   floorMinDepthThreshold: 0.55,
   floorMaxDepthThreshold: 0.96,
+  floorFovMultiplier: 2.5,
   bodyRoughness: 0.75,
   bodyEnvIntensity: 0.45,
   labelRoughness: 0.21,
@@ -272,6 +274,7 @@ const glassyFlowPreset: SceneTweaks = {
   floorDepthScale: 1.13,
   floorMinDepthThreshold: 0.11,
   floorMaxDepthThreshold: 1.27,
+  floorFovMultiplier: 2.5,
   bodyRoughness: 0.75,
   bodyEnvIntensity: 0.45,
   labelRoughness: 0.21,

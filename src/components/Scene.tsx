@@ -379,6 +379,7 @@ function Floor() {
           metalness={tweaks.floorMetalness}
           envMapIntensity={0}
           mirror={tweaks.floorMirror}
+          fovMultiplier={tweaks.floorFovMultiplier}
         />
       </mesh>
       <ContactShadows
@@ -616,6 +617,7 @@ function SceneLevaControls() {
       floorDepthScale: { value: sceneTweaks.floorDepthScale, min: 0.2, max: 3, step: 0.01, onChange: (value) => updateSceneTweaks({ floorDepthScale: value }) },
       floorMinDepthThreshold: { value: sceneTweaks.floorMinDepthThreshold, min: 0, max: 2, step: 0.01, onChange: (value) => updateSceneTweaks({ floorMinDepthThreshold: value }) },
       floorMaxDepthThreshold: { value: sceneTweaks.floorMaxDepthThreshold, min: 0.1, max: 3, step: 0.01, onChange: (value) => updateSceneTweaks({ floorMaxDepthThreshold: value }) },
+      floorFovMultiplier: { value: sceneTweaks.floorFovMultiplier, min: 1, max: 6, step: 0.1, onChange: (value) => updateSceneTweaks({ floorFovMultiplier: value }) },
       shadowOpacity: { value: sceneTweaks.shadowOpacity, min: 0, max: 1, step: 0.01, onChange: (value) => updateSceneTweaks({ shadowOpacity: value }) },
       shadowScale: { value: sceneTweaks.shadowScale, min: 2, max: 80, step: 0.5, onChange: (value) => updateSceneTweaks({ shadowScale: value }) },
       shadowBlur: { value: sceneTweaks.shadowBlur, min: 0.2, max: 6, step: 0.1, onChange: (value) => updateSceneTweaks({ shadowBlur: value }) },

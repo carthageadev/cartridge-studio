@@ -33,6 +33,7 @@ type LayeredReflectorMaterialProps = {
   mixStrength?: number
   reflectorOffset?: number
   resolution?: number
+  fovMultiplier?: number
   [key: string]: any
 }
 
@@ -51,6 +52,7 @@ export const LayeredReflectorMaterial = React.forwardRef<any, LayeredReflectorMa
   distortionMap,
   includeEnvironment = false,
   reflectorOffset = 0,
+  fovMultiplier = 2.5,
   layer = 1,
   ...props
 }, ref) => {
@@ -114,6 +116,17 @@ export const LayeredReflectorMaterial = React.forwardRef<any, LayeredReflectorMa
     virtualCamera.updateMatrixWorld()
     virtualCamera.projectionMatrix.copy(camera.projectionMatrix)
 
+    // Widen the virtual camera FOV so reflections capture more cartridges
+    const fovRad = (camera as PerspectiveCamera).fov * (Math.PI / 180) * fovMultiplier
+    const aspect = (camera as PerspectiveCamera).aspect
+    const near = camera.near
+    const far = camera.far
+    const top = near * Math.tan(fovRad / 2)
+    const bottom = -top
+    const left = bottom * aspect
+    const right = top * aspect
+    virtualCamera.projectionMatrix.makePerspective(left, right, top, bottom, near, far)
+
     textureMatrix.set(0.5, 0.0, 0.0, 0.5, 0.0, 0.5, 0.0, 0.5, 0.0, 0.0, 0.5, 0.5, 0.0, 0.0, 0.0, 1.0)
     textureMatrix.multiply(virtualCamera.projectionMatrix)
     textureMatrix.multiply(virtualCamera.matrixWorldInverse)
@@ -134,7 +147,7 @@ export const LayeredReflectorMaterial = React.forwardRef<any, LayeredReflectorMa
     projectionMatrix.elements[10] = clipPlane.z + 1
     projectionMatrix.elements[14] = clipPlane.w
     return true
-  }, [camera, clipPlane, layer, lookAtPosition, normal, q, reflectorOffset, reflectorPlane, reflectorWorldPosition, rotationMatrix, target, textureMatrix, view, virtualCamera, cameraWorldPosition])
+  }, [camera, clipPlane, layer, lookAtPosition, normal, q, reflectorOffset, reflectorPlane, reflectorWorldPosition, rotationMatrix, target, textureMatrix, view, virtualCamera, cameraWorldPosition, fovMultiplier])
 
   const [fbo1, fbo2, blurpass, reflectorProps] = React.useMemo(() => {
     const parameters = {
