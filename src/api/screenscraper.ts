@@ -119,12 +119,24 @@ export function clearCredentials() {
 /** Rewrite API media URLs to route through the Vite proxy. */
 export function proxify(url: string): string {
   try {
-    const parsed = new URL(url)
-    const path = parsed.pathname.startsWith('/api2') ? parsed.pathname : `/api2${parsed.pathname}`
+    const creds = getCredentials()
+    let path: string
+    let params: URLSearchParams
+
+    // Handle both full URLs and relative paths
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      const parsed = new URL(url)
+      path = parsed.pathname.startsWith('/api2') ? parsed.pathname : `/api2${parsed.pathname}`
+      params = new URLSearchParams(parsed.search)
+    } else {
+      // Relative path like /api2/mediaJeu.php?...
+      const qIndex = url.indexOf('?')
+      path = qIndex >= 0 ? url.slice(0, qIndex) : url
+      if (!path.startsWith('/api2')) path = `/api2${path}`
+      params = new URLSearchParams(qIndex >= 0 ? url.slice(qIndex + 1) : '')
+    }
 
     // Inject current credentials into the media URL so empty ones get replaced
-    const creds = getCredentials()
-    const params = new URLSearchParams(parsed.search)
     if (creds.devid) params.set('devid', creds.devid)
     if (creds.devpassword) params.set('devpassword', creds.devpassword)
     if (creds.softname) params.set('softname', creds.softname)

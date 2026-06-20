@@ -2,6 +2,15 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 const SCREENSCRAPER_BASE = 'https://www.screenscraper.fr/api2'
 
+// Credential env vars - injected server-side so media URLs always authenticate
+const DEFAULT_CREDS: Record<string, string> = {
+  devid: process.env.VITE_SCREENSCRAPER_DEV_ID ?? '',
+  devpassword: process.env.VITE_SCREENSCRAPER_DEV_PASSWORD ?? '',
+  softname: process.env.VITE_SCREENSCRAPER_SOFT_NAME ?? 'CartridgeFlow',
+  ssid: process.env.VITE_SCREENSCRAPER_SS_ID ?? '',
+  sspassword: process.env.VITE_SCREENSCRAPER_SS_PASSWORD ?? '',
+}
+
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*')
@@ -20,6 +29,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     // Build the target URL - forward all query params except 'slug'
+    // Inject credentials when missing or empty
     const params = new URLSearchParams()
     for (const [key, value] of Object.entries(req.query)) {
       if (key === 'slug') continue
@@ -27,6 +37,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         value.forEach((v) => params.append(key, v))
       } else if (value !== undefined) {
         params.set(key, value)
+      }
+    }
+
+    // Fill in any missing/empty credentials from env vars
+    for (const [key, val] of Object.entries(DEFAULT_CREDS)) {
+      if (val && (!params.get(key) || params.get(key) === '')) {
+        params.set(key, val)
       }
     }
 
