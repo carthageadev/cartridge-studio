@@ -171,11 +171,8 @@ export async function searchGames(query: string): Promise<SearchResult[]> {
 }
 
 export async function fetchGameInfo(gameId: string): Promise<GameInfo> {
-  const data = await ssRequest('jeuInfos.php', { gameid: gameId })
-  const jeu = data?.response?.jeu
-  if (!jeu) throw new Error('Game not found')
+  // Build media URL directly - serverless function injects credentials
+  const labelUrl = `/api2/mediaJeu.php?systemeid=${N64_SYSTEM_ID}&jeuid=${gameId}&media=support-texture(us)`
 
-  return {
-    labelUrl: pickLabelUrl(jeu.medias),
-  }
+  return { labelUrl }
 }

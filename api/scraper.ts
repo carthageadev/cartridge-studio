@@ -2,13 +2,16 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 const SCREENSCRAPER_BASE = 'https://www.screenscraper.fr/api2'
 
+// Helper: read env var with or without VITE_ prefix
+const env = (name: string) => process.env[`VITE_${name}`] ?? process.env[name] ?? ''
+
 // Credential env vars - injected server-side so media URLs always authenticate
 const DEFAULT_CREDS: Record<string, string> = {
-  devid: process.env.VITE_SCREENSCRAPER_DEV_ID ?? '',
-  devpassword: process.env.VITE_SCREENSCRAPER_DEV_PASSWORD ?? '',
-  softname: process.env.VITE_SCREENSCRAPER_SOFT_NAME ?? 'CartridgeFlow',
-  ssid: process.env.VITE_SCREENSCRAPER_SS_ID ?? '',
-  sspassword: process.env.VITE_SCREENSCRAPER_SS_PASSWORD ?? '',
+  devid: env('SCREENSCRAPER_DEV_ID'),
+  devpassword: env('SCREENSCRAPER_DEV_PASSWORD'),
+  softname: env('SCREENSCRAPER_SOFT_NAME') || 'CartridgeFlow',
+  ssid: env('SCREENSCRAPER_SS_ID'),
+  sspassword: env('SCREENSCRAPER_SS_PASSWORD'),
 }
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
