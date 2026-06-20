@@ -310,7 +310,7 @@ const seededGames: Game[] = initialGames.map((game) => ({
 }))
 
 function isLegacySeedCover(coverArt: string | undefined) {
-  return typeof coverArt === "string" && coverArt.startsWith("/images/")
+  return typeof coverArt === "string" && (coverArt.startsWith("/images/") || coverArt.includes("devid=") || coverArt.includes("ssid="))
 }
 
 function sleep(ms: number) {
@@ -458,7 +458,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: "cartridge-flow-store-v1",
-      version: 6,
+      version: 7,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState: any, version) => {
         if (!persistedState) return persistedState
@@ -474,7 +474,7 @@ export const useStore = create<Store>()(
         }
 
         const shouldResetScenePreset =
-          version < 6 || persistedState.scenePresetVersion !== SCENE_PRESET_VERSION
+          version < 7 || persistedState.scenePresetVersion !== SCENE_PRESET_VERSION
 
         const baseState = {
           ...persistedState,
