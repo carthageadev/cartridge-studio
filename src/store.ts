@@ -378,24 +378,27 @@ export const useStore = create<Store>()(
       showLeva: false,
       toggleLeva: () => set((s) => ({ showLeva: !s.showLeva })),
       setShowLeva: (value: boolean) => set({ showLeva: value }),
-      sceneTweaks: defaultSceneTweaks,
-      savedSceneTweaks: defaultSceneTweaks,
+      sceneTweaks: { ...defaultSceneTweaks },
+      savedSceneTweaks: { ...defaultSceneTweaks },
       scenePresetVersion: SCENE_PRESET_VERSION,
       updateSceneTweaks: (patch) => set((s) => ({ sceneTweaks: normalizeSceneTweaks({ ...s.sceneTweaks, ...patch }) })),
       saveSceneTweaks: () => set((s) => ({ savedSceneTweaks: normalizeSceneTweaks(s.sceneTweaks) })),
-      revertSceneTweaks: () => set((s) => ({ sceneTweaks: normalizeSceneTweaks(s.savedSceneTweaks), levaPanelVersion: s.levaPanelVersion + 1 })),
+      revertSceneTweaks: () => set((s) => ({ sceneTweaks: { ...normalizeSceneTweaks(s.savedSceneTweaks) }, levaPanelVersion: s.levaPanelVersion + 1 })),
       resetSceneTweaks: () => set(() => ({
-        sceneTweaks: defaultSceneTweaks,
-        savedSceneTweaks: defaultSceneTweaks,
+        sceneTweaks: { ...defaultSceneTweaks },
+        savedSceneTweaks: { ...defaultSceneTweaks },
         scenePresetVersion: SCENE_PRESET_VERSION,
         levaPanelVersion: Date.now(),
       })),
-      applyPreset: (preset) => set(() => ({
-        sceneTweaks: normalizeSceneTweaks(preset),
-        savedSceneTweaks: normalizeSceneTweaks(preset),
-        scenePresetVersion: SCENE_PRESET_VERSION,
-        levaPanelVersion: Date.now(),
-      })),
+      applyPreset: (preset) => {
+        const normalized = normalizeSceneTweaks(preset)
+        set(() => ({
+          sceneTweaks: { ...normalized },
+          savedSceneTweaks: { ...normalized },
+          scenePresetVersion: SCENE_PRESET_VERSION,
+          levaPanelVersion: Date.now(),
+        }))
+      },
       levaPanelVersion: 0,
       addGame: (partial) => {
         set((s) => {
