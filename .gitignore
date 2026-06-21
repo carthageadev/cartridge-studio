@@ -3,6 +3,23 @@ node_modules/
 dist/
 .vite/
 npm-debug.log
+*.log
+
+# OS files
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# Environment
 .env
 .env.local
+.env*.local
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+
+# IDE
+.vscode/settings.json
+.idea/
