@@ -1,6 +1,6 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
-const SCREENSCRAPER_BASE = 'https://www.screenscraper.fr/api2'
+const SCREENSCRAPER_BASE = 'https://api.screenscraper.fr/api2'
 
 // Helper: read env var with or without VITE_ prefix
 const env = (name: string) => process.env[`VITE_${name}`] ?? process.env[name] ?? ''

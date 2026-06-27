@@ -2,10 +2,16 @@ import { create } from "zustand"
 import { createJSONStorage, persist } from "zustand/middleware"
 import { initialGames, type Game } from "./data/games"
 import { sortLibraryGames, type LibrarySortMode } from "./utils/library"
-import { fetchGameInfo, searchGames } from "./api/screenscraper"
+import { fetchGameInfoForTitle, getScraperThreads, searchGames } from "./api/screenscraper"
+import { clearCoverCacheStore, isCoverCacheKey } from "./utils/coverCache"
 
 const NO_IMAGE_COVER = "/no-image.svg"
 const SCENE_PRESET_VERSION = 8
+const MAX_CONCURRENT_RESOLVES = 10
+
+function hasRealCover(coverArt: string | undefined) {
+  return Boolean(coverArt && coverArt !== NO_IMAGE_COVER && (!isLegacySeedCover(coverArt) || isCoverCacheKey(coverArt)))
+}
 
 interface SceneTweaks {
   ambientIntensity: number
@@ -107,6 +113,7 @@ interface Store {
     highQuality: boolean
     crtOverlay: boolean
     cameraZoom: number
+    showCoverBadges: boolean
   }
   updateSettings: (patch: Partial<Store["settings"]>) => void
   resetSettings: () => void
@@ -134,6 +141,7 @@ const defaultSettings: Store["settings"] = {
   highQuality: true,
   crtOverlay: false,
   cameraZoom: 13,
+  showCoverBadges: true,
 }
 
 const defaultSceneTweaks: SceneTweaks = {
@@ -378,11 +386,30 @@ const seededGames: Game[] = initialGames.map((game) => ({
   ...game,
   coverArt: NO_IMAGE_COVER,
   ssId: null,
+  coverState: "queued",
   status: "pending",
 }))
 
 function isLegacySeedCover(coverArt: string | undefined) {
   return typeof coverArt === "string" && (coverArt.startsWith("/images/") || coverArt.includes("devid=") || coverArt.includes("ssid="))
+}
+
+function buildCoverError(err: unknown): string {
+  if (err instanceof Error) {
+    const message = err.message.toLowerCase()
+    if (message.includes("identifiants développeur") || message.includes("login")) return "ScreenScraper auth failed"
+    if (message.includes("403")) return "ScreenScraper auth failed"
+    if (message.includes("no match found")) return "Game not found"
+    if (message.includes("no cover") || message.includes("no media")) return "No cover"
+    if (message.includes("network") || message.includes("fetch")) return "Network error"
+  }
+  return "No cover"
+}
+
+function buildCoverState(err: unknown): NonNullable<Game["coverState"]> {
+  const message = buildCoverError(err)
+  if (message === "No cover" || message === "Game not found") return "missing"
+  return "error"
 }
 
 function sleep(ms: number) {
@@ -402,20 +429,12 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
   throw lastErr
 }
 
-function queryVariants(name: string): string[] {
-  const variants = [name]
-  const noPunct = name
-    .replace(/[^\p{L}\p{N}\s]/gu, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-  variants.push(noPunct)
-  if (name.includes(":")) {
-    const [main, sub] = name.split(":").map((s) => s.trim())
-    if (sub) variants.push(sub)
-    if (main) variants.push(main)
-  }
-  variants.push(noPunct.replace(/^the\s+/i, ""))
-  return [...new Set(variants.map((variant) => variant.trim()).filter((variant) => variant.length >= 2))]
+function claimNextPendingGame() {
+  const store = useStore.getState()
+  const next = store.library.find((game) => game.status === "pending")
+  if (!next) return null
+  store.updateGame(next.id, { status: "loading", coverState: "fetching", error: undefined })
+  return { ...next, status: "loading" as const, coverState: "fetching" as const, error: undefined }
 }
 
 export const useStore = create<Store>()(
@@ -493,8 +512,10 @@ export const useStore = create<Store>()(
           const newGame: Game = {
             id: maxId + 1,
             ssId: null,
+            coverState: "queued",
             status: "pending",
             coverArt: NO_IMAGE_COVER,
+            error: undefined,
             ...partial,
           } as Game
           return { library: [...s.library, newGame] }
@@ -530,7 +551,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: "cartridge-flow-store-v1",
-      version: 7,
+      version: 8,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState: any, version) => {
         if (!persistedState) return persistedState
@@ -561,16 +582,22 @@ export const useStore = create<Store>()(
           showLeva: false,
         }
 
+        const restoredLibrary = persistedState.library.length > 0
+          ? persistedState.library.map((game: Game) => ({
+              ...game,
+              coverArt: hasRealCover(game.coverArt) ? game.coverArt : NO_IMAGE_COVER,
+              status: hasRealCover(game.coverArt)
+                ? (game.status === "error" ? "error" : "ready")
+                : "pending",
+              coverState: hasRealCover(game.coverArt)
+                ? (game.coverState === "fetched" ? "fetched" : "cached")
+                : "queued",
+            }))
+          : seededGames
+
         return {
           ...baseState,
-          library: persistedState.library.map((game: Game) => ({
-            ...game,
-            coverArt: isLegacySeedCover(game.coverArt) ? NO_IMAGE_COVER : (game.coverArt || NO_IMAGE_COVER),
-            status:
-              isLegacySeedCover(game.coverArt) || !game.coverArt
-                ? "pending"
-                : (game.status ?? "pending"),
-          })),
+          library: restoredLibrary,
         }
       },
       partialize: (s) => ({
@@ -597,63 +624,110 @@ export const useStore = create<Store>()(
 
 const sleepQueue = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
 
-async function resolveLibrary() {
-  for (;;) {
-    const current = useStore.getState()
-    const next = current.library.find((g) => g.status === "pending")
-    if (!next) break
-
-    useStore.getState().updateGame(next.id, { status: "loading" })
-
-    try {
-      let ssId = next.ssId
-      if (!ssId) {
-        for (const query of queryVariants(next.title)) {
-          try {
-            const found = await withRetry(() => searchGames(query), 2)
-            if (found[0]) {
-              ssId = found[0].id
-              break
-            }
-          } catch {
-            /* try next variant */
-          }
-          await sleepQueue(250)
-        }
-      }
-
-      if (!ssId) throw new Error("No match found")
-
-      const info = await withRetry(() => fetchGameInfo(ssId), 2)
-      const patch: Partial<Game> = {
-        ssId,
-        status: "ready",
-        coverArt: info.labelUrl || NO_IMAGE_COVER,
-      }
-      useStore.getState().updateGame(next.id, patch)
-    } catch (err) {
-      console.warn(`[retroflow] could not resolve art for "${next.title}":`, err)
-      useStore.getState().updateGame(next.id, { status: "error", coverArt: NO_IMAGE_COVER })
+async function resolveOneGame(next: Game) {
+  console.info('[covers] resolve_start', {
+    id: next.id,
+    title: next.title,
+    ssId: next.ssId ?? null,
+  })
+  try {
+    let ssId = next.ssId
+    if (!ssId) {
+      const found = await withRetry(() => searchGames(next.title), 2)
+      if (found[0]) ssId = found[0].id
     }
 
-    await sleepQueue(350)
+    if (!ssId) throw new Error("No match found")
+
+    const info = await withRetry(() => fetchGameInfoForTitle(ssId, next.title), 2)
+    if (!info.labelUrl) throw new Error("No cover")
+    const patch: Partial<Game> = {
+      ssId,
+      status: "ready",
+      coverState: "fetched",
+      coverArt: info.labelUrl,
+      error: undefined,
+    }
+    useStore.getState().updateGame(next.id, patch)
+    console.info('[covers] resolve_success', {
+      id: next.id,
+      title: next.title,
+      ssId,
+      coverArt: info.labelUrl,
+    })
+  } catch (err) {
+    console.warn(`[retroflow] could not resolve art for "${next.title}":`, err)
+    useStore.getState().updateGame(next.id, {
+      status: "error",
+      coverArt: NO_IMAGE_COVER,
+      coverState: buildCoverState(err),
+      error: buildCoverError(err),
+    })
+    console.error('[covers] resolve_error', {
+      id: next.id,
+      title: next.title,
+      error: err instanceof Error ? err.message : String(err),
+    })
+  }
+
+  await sleepQueue(350)
+}
+
+async function resolveWorker() {
+  for (;;) {
+    const next = claimNextPendingGame()
+    if (!next) break
+    await resolveOneGame(next)
   }
 }
 
 let runningResolver = false
+let resolverPoolSize = 1
 
 export function startLibraryResolver() {
   if (runningResolver) return
   const store = useStore.getState()
 
   for (const g of store.library) {
-    if (g.status === "loading" || g.status === "error" || isLegacySeedCover(g.coverArt) || !g.coverArt) {
-      store.updateGame(g.id, { status: "pending", coverArt: NO_IMAGE_COVER })
+    if (g.status === "loading" || g.status === "error" || !hasRealCover(g.coverArt)) {
+      store.updateGame(g.id, { status: "pending", coverState: "queued", coverArt: NO_IMAGE_COVER, error: undefined })
+      continue
+    }
+    if (g.coverState !== "cached" && g.coverState !== "fetched") {
+      store.updateGame(g.id, { status: "ready", coverState: "cached", error: undefined })
     }
   }
 
   runningResolver = true
-  resolveLibrary().finally(() => {
-    runningResolver = false
-  })
+  getScraperThreads()
+    .then((threads) => {
+      resolverPoolSize = Math.max(1, Math.min(MAX_CONCURRENT_RESOLVES, threads))
+    })
+    .catch(() => {
+      resolverPoolSize = 1
+    })
+    .finally(() => {
+      Promise.all(Array.from({ length: resolverPoolSize }, () => resolveWorker())).finally(() => {
+        runningResolver = false
+      })
+    })
+}
+
+export function refreshLibraryCovers() {
+  const store = useStore.getState()
+  for (const g of store.library) {
+    store.updateGame(g.id, {
+      status: "pending",
+      coverState: "queued",
+      coverArt: NO_IMAGE_COVER,
+      error: undefined,
+      ssId: null,
+    })
+  }
+  startLibraryResolver()
+}
+
+export async function clearLibraryCoverCache() {
+  await clearCoverCacheStore()
+  refreshLibraryCovers()
 }

@@ -9,7 +9,9 @@ export interface Game {
   rating: number
   players: string
   color: string
+  error?: string
   ssId?: string | null
+  coverState?: 'queued' | 'fetching' | 'cached' | 'fetched' | 'missing' | 'error'
   status?: 'pending' | 'loading' | 'ready' | 'error'
 }
 

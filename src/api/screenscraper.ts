@@ -16,9 +16,81 @@ export interface GameInfo {
   labelUrl: string | null
 }
 
+import { saveCoverBlob } from "../utils/coverCache"
+
 const CREDS_KEY = 'retroflow.creds.v1'
 const N64_SYSTEM_ID = '14'
-const REGION_PRIORITY = ['wor', 'us', 'eu', 'ss', 'jp']
+const REGION_PRIORITY = ['us', 'eu', 'jp', 'ss', 'wor']
+const LABEL_MEDIA_TYPE = 'support-texture'
+
+function maskSecret(value: string): string {
+  if (!value) return ''
+  if (value.length <= 4) return '***'
+  return `${value.slice(0, 2)}***${value.slice(-2)}`
+}
+
+function logScraper(event: string, details: Record<string, unknown>) {
+  console.info('[screenscraper]', event, details)
+}
+function stripDiacritics(value: string): string {
+  return value.normalize('NFKD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function cleanSearchTerm(value: string): string {
+  return stripDiacritics(value)
+    .replace(/\.(zip|rar|7z|gz|rom|iso|bin|cue|img|z64|n64|v64)$/gi, ' ')
+    .replace(/[_:+\-\u2013\u2014/\\|]+/g, ' ')
+    .replace(/(\.nkit|!|Disc\s+\d+|Rev\s+\w+|Proto|Beta|Sample|Demo|Aftermarket|\s*\([^()]*\)|\s*\[[^\[\]]*\])/gi, ' ')
+    .replace(/\b(usa|us|europe|eur|japan|jp|world|wii\s+virtual\s+console|switch\s+online)\b/gi, ' ')
+    .replace(/[']/g, '')
+    .replace(/\bthe\s+/gi, '')
+    .replace(/\.(zip|rar|7z|gz|rom|iso|bin|cue|img)$/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function detectPreferredRegions(value: string): string[] {
+  const normalized = stripDiacritics(value).toLowerCase()
+  const detected: string[] = []
+  const rules: Array<[string, RegExp]> = [
+    ['us', /\b(usa|u\.s\.a|us|ntsc[-\s]?u|north america)\b/],
+    ['eu', /\b(europe|eur|pal|uk|france|germany|de|spain|sp|italy|it|australia|au)\b/],
+    ['jp', /\b(japan|jp|ntsc[-\s]?j)\b/],
+    ['wor', /\b(world|wor)\b/],
+  ]
+  for (const [region, pattern] of rules) {
+    if (pattern.test(normalized)) detected.push(region)
+  }
+  return [...new Set([...detected, ...REGION_PRIORITY])]
+}
+
+function buildSearchCandidates(query: string): string[] {
+  const raw = stripDiacritics(query).trim()
+  const parts = [
+    raw,
+    raw.split(':')[0],
+    raw.split(/\s-\s/)[0],
+  ]
+  return [...new Set(parts.map(cleanSearchTerm).filter((value) => value.length >= 2))]
+}
+
+function normalizeForMatch(value: string): string {
+  return cleanSearchTerm(value).toLowerCase()
+}
+
+function scoreSearchResult(query: string, name: string, preferredRegions: string[], resultRegion?: string): number {
+  const left = normalizeForMatch(query)
+  const right = normalizeForMatch(name)
+  if (!left || !right) return 0
+  const regionBonus = resultRegion ? Math.max(0, 5 - preferredRegions.indexOf(resultRegion.toLowerCase())) * 20 : 0
+  if (left === right) return 1000 + regionBonus
+  if (right.startsWith(left)) return 850 - (right.length - left.length) + regionBonus
+  if (left.startsWith(right)) return 800 - (left.length - right.length) + regionBonus
+  const leftTokens = left.split(' ')
+  const rightTokens = new Set(right.split(' '))
+  const tokenHits = leftTokens.filter((token) => rightTokens.has(token)).length
+  return tokenHits * 100 - Math.abs(right.length - left.length) + regionBonus
+}
 
 function asArray<T>(value: T | T[] | undefined | null): T[] {
   if (value == null) return []
@@ -26,8 +98,12 @@ function asArray<T>(value: T | T[] | undefined | null): T[] {
 }
 
 function pickByRegion<T extends { region?: string }>(items: T[]): T | undefined {
-  for (const region of REGION_PRIORITY) {
-    const hit = items.find((i) => i.region === region)
+  return pickByPreferredRegions(items, REGION_PRIORITY)
+}
+
+function pickByPreferredRegions<T extends { region?: string }>(items: T[], preferredRegions: string[]): T | undefined {
+  for (const region of preferredRegions) {
+    const hit = items.find((i) => (i.region || '').toLowerCase() === region)
     if (hit) return hit
   }
   return items[0]
@@ -43,10 +119,39 @@ function pickYear(dates: any): string {
   return (pickByRegion(arr)?.text ?? '').slice(0, 4)
 }
 
-function pickLabelUrl(medias: any): string | null {
-  const textures = asArray<any>(medias).filter((m) => m.type === 'support-texture')
-  const best = pickByRegion(textures)
+function pickLabelUrl(medias: any, preferredRegions: string[]): string | null {
+  const textures = asArray<any>(medias).filter((m) => m.type === LABEL_MEDIA_TYPE)
+  const best = pickByPreferredRegions(textures, preferredRegions)
   return best?.url ? proxify(best.url) : null
+}
+
+function pickLabelUrlFromGame(data: any, preferredRegions: string[]): string | null {
+  const jeu = asArray<any>(data?.response?.jeu)[0] ?? data?.response?.jeu ?? null
+  if (!jeu) return null
+  return pickLabelUrl(jeu.medias, preferredRegions)
+}
+
+async function isImageUrl(url: string): Promise<boolean> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return false
+    const contentType = (res.headers.get('content-type') ?? '').toLowerCase()
+    return contentType.startsWith('image/')
+  } catch {
+    return false
+  }
+}
+
+async function downloadImageBlob(url: string): Promise<Blob | null> {
+  try {
+    const res = await fetch(url)
+    if (!res.ok) return null
+    const contentType = (res.headers.get('content-type') ?? '').toLowerCase()
+    if (!contentType.startsWith('image/')) return null
+    return await res.blob()
+  } catch {
+    return null
+  }
 }
 
 async function ssRequest(endpoint: string, params: Record<string, string>) {
@@ -55,22 +160,36 @@ async function ssRequest(endpoint: string, params: Record<string, string>) {
     devid: creds.devid,
     devpassword: creds.devpassword,
     softname: creds.softname,
-    ssid: creds.ssid,
-    sspassword: creds.sspassword,
     output: 'json',
     ...params,
+  })
+  logScraper('request', {
+    endpoint,
+    devid: creds.devid,
+    devpassword: maskSecret(creds.devpassword),
+    softname: creds.softname,
+    params,
   })
 
   const res = await fetch(`/api2/${endpoint}?${qs}`)
   const text = await res.text()
 
   if (!res.ok) {
+    console.error('[screenscraper] request_failed', {
+      endpoint,
+      status: res.status,
+      body: text.slice(0, 160),
+    })
     const err = new Error(`ScreenScraper ${res.status}: ${text.slice(0, 120)}`)
     ;(err as any).status = res.status
     throw err
   }
 
   try {
+    logScraper('request_ok', {
+      endpoint,
+      status: res.status,
+    })
     return JSON.parse(text)
   } catch {
     throw new Error(text.slice(0, 160) || 'Invalid ScreenScraper response')
@@ -82,8 +201,8 @@ export function getDefaultCredentials(): Credentials {
     devid: import.meta.env.VITE_SCREENSCRAPER_DEV_ID ?? '',
     devpassword: import.meta.env.VITE_SCREENSCRAPER_DEV_PASSWORD ?? '',
     softname: import.meta.env.VITE_SCREENSCRAPER_SOFT_NAME ?? 'CartridgeFlow',
-    ssid: import.meta.env.VITE_SCREENSCRAPER_SS_ID ?? '',
-    sspassword: import.meta.env.VITE_SCREENSCRAPER_SS_PASSWORD ?? '',
+    ssid: '',
+    sspassword: '',
   }
 }
 
@@ -93,19 +212,32 @@ export function getCredentials(): Credentials {
     if (raw) {
       const saved = JSON.parse(raw) as Partial<Credentials>
       const def = getDefaultCredentials()
-      return {
-        devid: saved.devid || def.devid,
-        devpassword: saved.devpassword || def.devpassword,
-        softname: saved.softname || def.softname,
-        ssid: saved.ssid || def.ssid,
-        sspassword: saved.sspassword || def.sspassword,
+      const creds = {
+        devid: def.devid,
+        devpassword: def.devpassword,
+        softname: def.softname,
+        ssid: '',
+        sspassword: '',
       }
+      logScraper('credentials_loaded', {
+        devid: creds.devid,
+        devpassword: maskSecret(creds.devpassword),
+        source: 'env_only',
+        ignoredSavedKeys: Object.keys(saved),
+      })
+      return creds
     }
   } catch {
     /* no-op */
   }
 
-  return getDefaultCredentials()
+  const creds = getDefaultCredentials()
+  logScraper('credentials_loaded', {
+    devid: creds.devid,
+    devpassword: maskSecret(creds.devpassword),
+    source: 'env_default',
+  })
+  return creds
 }
 
 export function saveCredentials(creds: Credentials) {
@@ -140,8 +272,8 @@ export function proxify(url: string): string {
     if (creds.devid) params.set('devid', creds.devid)
     if (creds.devpassword) params.set('devpassword', creds.devpassword)
     if (creds.softname) params.set('softname', creds.softname)
-    if (creds.ssid) params.set('ssid', creds.ssid)
-    if (creds.sspassword) params.set('sspassword', creds.sspassword)
+    params.delete('ssid')
+    params.delete('sspassword')
 
     return `${path}?${params.toString()}`
   } catch {
@@ -150,29 +282,73 @@ export function proxify(url: string): string {
 }
 
 export async function searchGames(query: string): Promise<SearchResult[]> {
-  try {
-    const data = await ssRequest('jeuRecherche.php', {
-      systemeid: N64_SYSTEM_ID,
-      recherche: query,
-    })
-    const jeux = asArray<any>(data?.response?.jeux?.jeu ?? data?.response?.jeux)
-    return jeux
-      .filter((j) => j?.id != null)
-      .filter((j) => j.systeme?.id == null || String(j.systeme.id) === N64_SYSTEM_ID)
-      .map((j) => ({
-        id: String(j.id),
-        name: pickName(j.noms) || 'Unknown title',
-        year: pickYear(j.dates),
-      }))
-  } catch (err: any) {
-    if (err?.status === 404) return []
-    throw err
+  const ranked = new Map<string, SearchResult & { score: number }>()
+  const preferredRegions = detectPreferredRegions(query)
+
+  for (const candidate of buildSearchCandidates(query)) {
+    try {
+      const data = await ssRequest('jeuRecherche.php', {
+        systemeid: N64_SYSTEM_ID,
+        recherche: candidate,
+      })
+      const jeux = asArray<any>(data?.response?.jeux?.jeu ?? data?.response?.jeux)
+      for (const game of jeux) {
+        if (game?.id == null) continue
+        if (game.systeme?.id != null && String(game.systeme.id) !== N64_SYSTEM_ID) continue
+        const result = {
+          id: String(game.id),
+          name: pickName(game.noms) || 'Unknown title',
+          year: pickYear(game.dates),
+        }
+        const score = scoreSearchResult(query, result.name, preferredRegions, pickByRegion(asArray<any>(game.noms))?.region)
+        const existing = ranked.get(result.id)
+        if (!existing || score > existing.score) ranked.set(result.id, { ...result, score })
+      }
+      if (ranked.size > 0) break
+    } catch (err: any) {
+      if (err?.status === 404) continue
+      throw err
+    }
   }
+
+  return [...ranked.values()]
+    .sort((a, b) => b.score - a.score)
+    .map(({ score, ...result }) => result)
 }
 
 export async function fetchGameInfo(gameId: string): Promise<GameInfo> {
-  // Build media URL directly - serverless function injects credentials
-  const labelUrl = `/api2/mediaJeu.php?systemeid=${N64_SYSTEM_ID}&jeuid=${gameId}&media=support-texture(us)`
+  return fetchGameInfoForTitle(gameId, '')
+}
 
-  return { labelUrl }
+export async function fetchGameInfoForTitle(gameId: string, title: string): Promise<GameInfo> {
+  const preferredRegions = detectPreferredRegions(title)
+  try {
+    const data = await ssRequest('jeuInfos.php', {
+      systemeid: N64_SYSTEM_ID,
+      gameid: gameId,
+    })
+    const labelUrl = pickLabelUrlFromGame(data, preferredRegions)
+    if (labelUrl && await isImageUrl(labelUrl)) {
+      const blob = await downloadImageBlob(labelUrl)
+      if (blob) return { labelUrl: await saveCoverBlob(`ss-${gameId}`, blob) }
+      return { labelUrl }
+    }
+  } catch {
+    /* fall through to direct media candidates */
+  }
+
+  for (const region of preferredRegions) {
+    const labelUrl = proxify(`/api2/mediaJeu.php?systemeid=${N64_SYSTEM_ID}&jeuid=${gameId}&media=${LABEL_MEDIA_TYPE}(${region})`)
+    if (await isImageUrl(labelUrl)) {
+      const blob = await downloadImageBlob(labelUrl)
+      if (blob) return { labelUrl: await saveCoverBlob(`ss-${gameId}`, blob) }
+      return { labelUrl }
+    }
+  }
+
+  return { labelUrl: null }
+}
+
+export async function getScraperThreads(): Promise<number> {
+  return 1
 }

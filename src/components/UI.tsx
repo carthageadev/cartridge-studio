@@ -1,8 +1,10 @@
 import { useEffect, useState, useCallback } from "react"
-import { useStore, PRESETS } from "../store"
+import { useStore, PRESETS, clearLibraryCoverCache, refreshLibraryCovers } from "../store"
+import { clearCredentials } from "../api/screenscraper"
+import { saveCoverFile } from "../utils/coverCache"
 import {
   Search, Heart, Library, Info, X, BatteryMedium, BatteryLow, BatteryFull,
-  Wifi, Settings, Clock, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2
+  Wifi, Settings, Clock, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2, Upload
 } from "lucide-react"
 import { Button, Badge, Dialog, DialogContent, DialogTitle, DialogDescription, Tabs, TabsList, TabsTrigger, Slider, Switch } from "./primitives"
 import { cn } from "../utils/cn"
@@ -59,6 +61,11 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
     const t = setInterval(() => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })), 1000)
     return () => clearInterval(t)
   }, [])
+
+  const clearCoverCache = () => {
+    clearCredentials()
+    void clearLibraryCoverCache()
+  }
 
   return (
     <>
@@ -146,6 +153,7 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
             <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] divide-y divide-white/[0.06]">
               <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-white/80">High Quality Textures</span><Switch checked={settings.highQuality} onCheckedChange={(checked) => updateSettings({ highQuality: checked })} /></div>
               <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-white/80">CRT Scanline Overlay</span><Switch checked={settings.crtOverlay} onCheckedChange={(checked) => updateSettings({ crtOverlay: checked })} /></div>
+              <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-white/80">Cover Status Badges</span><Switch checked={settings.showCoverBadges} onCheckedChange={(checked) => updateSettings({ showCoverBadges: checked })} /></div>
             </div>
           </div>
 
@@ -172,6 +180,17 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
                   {name}
                 </Button>
               ))}
+            </div>
+          </div>
+
+          <div className="mb-5">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">ScreenScraper</p>
+            <div className="space-y-3 rounded-2xl bg-white/[0.03] border border-white/[0.06] p-4">
+              <p className="text-xs text-white/50">Developer keys come from `.env.local`. Fetched cover URLs are cached in the library state, so normal reloads should reuse them without refetching.</p>
+              <div className="flex gap-2">
+                <Button variant="outline" onClick={refreshLibraryCovers} className="flex-1 text-xs">Refetch Covers</Button>
+                <Button variant="ghost" onClick={clearCoverCache} className="flex-1 text-xs">Clear Cover Cache</Button>
+              </div>
             </div>
           </div>
 
@@ -213,6 +232,19 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
   const closeForm = () => { setFormOpen(false); setEditing(null) }
   const saveForm = () => { if (editing) updateGame(editing.id, form); else addGame(form); closeForm() }
   const handleRemove = (id: number, e: React.MouseEvent) => { e.stopPropagation(); if (confirm("Remove this cartridge?")) removeGame(id) }
+  const handleCustomCoverForGame = async (game: any, file: File) => {
+    const cacheKey = await saveCoverFile(`custom-${game.id}`, file)
+    updateGame(game.id, {
+      coverArt: cacheKey,
+      status: "ready",
+      coverState: "cached",
+      error: undefined,
+    })
+  }
+  const handleCustomCoverForForm = async (file: File) => {
+    const cacheKey = await saveCoverFile(`custom-form-${editing?.id ?? Date.now()}`, file)
+    setForm((current) => ({ ...current, coverArt: cacheKey }))
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
@@ -253,6 +285,11 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
               <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm h-16 col-span-2 resize-y" />
               <input value={form.coverArt} onChange={(e) => setForm({ ...form, coverArt: e.target.value })} placeholder="Cover URL" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm" />
               <input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="#Hex color" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm" />
+              <label className="col-span-2 flex items-center justify-center gap-2 rounded-2xl border border-dashed border-white/15 bg-white/[0.03] px-4 py-4 text-sm text-white/70 cursor-pointer transition-all hover:border-white/30 hover:bg-white/[0.06] hover:-translate-y-0.5">
+                <Upload className="w-4 h-4" />
+                Upload custom cover
+                <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleCustomCoverForForm(file) }} />
+              </label>
             </div>
             <div className="flex gap-3 mt-4">
               <Button variant="ghost" onClick={closeForm} className="flex-1">Cancel</Button>
@@ -276,6 +313,10 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
                     {/* Quick actions */}
                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button onClick={(e) => { e.stopPropagation(); toggleFavorite(game.id) }} className={cn("p-1.5 rounded-lg bg-black/50 backdrop-blur", isFav ? "text-pink-400" : "text-white/70 hover:text-white")}><Heart className={cn("w-3.5 h-3.5", isFav && "fill-current")} /></button>
+                      <label onClick={(e) => e.stopPropagation()} className="p-1.5 rounded-lg bg-black/50 backdrop-blur text-white/70 hover:text-white cursor-pointer transition-transform hover:-translate-y-0.5">
+                        <Upload className="w-3.5 h-3.5" />
+                        <input type="file" accept="image/*" className="hidden" onChange={(e) => { const file = e.target.files?.[0]; if (file) handleCustomCoverForGame(game, file) }} />
+                      </label>
                       <button onClick={(e) => { e.stopPropagation(); openEdit(game) }} className="p-1.5 rounded-lg bg-black/50 backdrop-blur text-white/70 hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
                       <button onClick={(e) => handleRemove(game.id, e)} className="p-1.5 rounded-lg bg-black/50 backdrop-blur text-white/70 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
@@ -334,7 +375,23 @@ export function UI() {
     return () => window.removeEventListener("wheel", h)
   }, [next, prev])
 
-  if (!game) return null
+  if (!game) {
+    return (
+      <div className="absolute inset-0 flex flex-col z-10 select-none pointer-events-none">
+        <StatusBar onLibrary={() => setLibraryOpen(true)} inspectMode={inspectMode} setInspectMode={setInspectMode} />
+        <div className="flex-1 flex items-center justify-center px-6">
+          <div className="pointer-events-auto rounded-3xl border border-white/10 bg-white/5 px-6 py-5 text-center">
+            <div className="text-lg font-bold text-white">No cartridges available</div>
+            <p className="mt-2 text-sm text-white/55">Open the library or refresh the saved state.</p>
+            <div className="mt-4">
+              <Button onClick={() => setLibraryOpen(true)} className="rounded-xl text-sm">Open Library</Button>
+            </div>
+          </div>
+        </div>
+        <LibraryPanel open={libraryOpen} onClose={() => setLibraryOpen(false)} />
+      </div>
+    )
+  }
 
   return (
     <div className="absolute inset-0 flex flex-col z-10 select-none pointer-events-none">

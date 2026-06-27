@@ -15,7 +15,7 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/api2': {
-        target: 'https://www.screenscraper.fr',
+        target: 'https://api.screenscraper.fr',
         changeOrigin: true,
         secure: true,
       },

@@ -1,10 +1,42 @@
-import { useState, useEffect } from "react"
+import React, { useState, useEffect } from "react"
+import type { ReactNode } from "react"
 import { Leva } from "leva"
 import { Routes, Route } from "react-router-dom"
 import { DebugLightPanel } from "./components/DebugLightPanel"
 import { Scene } from "./components/Scene"
 import { UI, LoadingScreen } from "./components/UI"
 import { startLibraryResolver, useStore } from "./store"
+
+class AppErrorBoundary extends React.Component<{ children: ReactNode }, { hasError: boolean; message: string }> {
+  constructor(props: { children: ReactNode }) {
+    super(props)
+    this.state = { hasError: false, message: "" }
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, message: error.message || "Unknown render error" }
+  }
+
+  componentDidCatch(error: Error) {
+    console.error("App render failed:", error)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="absolute inset-0 flex items-center justify-center bg-[#05050c] px-6 text-center text-white">
+          <div className="max-w-lg rounded-3xl border border-white/10 bg-white/5 p-6">
+            <h1 className="text-xl font-bold">Render failed</h1>
+            <p className="mt-2 text-sm text-white/60">{this.state.message}</p>
+            <p className="mt-3 text-xs uppercase tracking-[0.2em] text-white/35">Refresh after fixes or clear broken local state</p>
+          </div>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
 
 function App() {
   const [loading, setLoading] = useState(true)
@@ -26,10 +58,12 @@ function App() {
       <div
         className={`absolute inset-0 transition-opacity duration-1000 ${loading ? "opacity-0" : "opacity-100"}`}
       >
-        <Routes>
-          <Route path="/" element={<><Scene /><UI /></>} />
-          {/* Add more routes here as needed */}
-        </Routes>
+        <AppErrorBoundary>
+          <Routes>
+            <Route path="/" element={<><Scene /><UI /></>} />
+            {/* Add more routes here as needed */}
+          </Routes>
+        </AppErrorBoundary>
       </div>
 
       {/* Loading overlay */}

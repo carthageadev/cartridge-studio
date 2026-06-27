@@ -6,7 +6,7 @@
   "rewrites": [
     {
       "source": "/api2/:slug*",
-      "destination": "/api/scraper"
+      "destination": "/api/scraper?slug=:slug*"
     }
   ],
   "headers": [

@@ -5,10 +5,11 @@ import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing"
 import { CameraMotionBlur } from "./CameraMotionBlur"
 import * as THREE from "three"
 import { button, folder, useControls } from "leva"
-import { Loader2 } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"
 import { LayeredReflectorMaterial } from "./LayeredReflectorMaterial"
 import { type Game } from "../data/games"
-import { useStore } from "../store"
+import { startLibraryResolver, useStore } from "../store"
+import { isCoverCacheKey, isCustomCoverKey, loadCoverObjectUrl, releaseCoverObjectUrl } from "../utils/coverCache"
 
 /* ================================================================== */
 /*  Asset URLs                                                         */
@@ -21,7 +22,6 @@ const MODEL_URL = `${PREFIX}/model.glb`
 const BODY_BASE_URL = `${PREFIX}/diffuse.jpg`
 const BODY_NORMAL_URL = `${PREFIX}/normal.png`
 const BODY_ROUGHNESS_URL = `${PREFIX}/roughness.png`
-const FALLBACK_COVER = `/no-image.svg`
 const SCENE_BG = "#07111c"
 
 const TARGET_HEIGHT = 2.8
@@ -65,21 +65,67 @@ function useFlippedDataTexture(url: string): THREE.Texture {
   return texture
 }
 
-function useCoverTexture(url: string): THREE.Texture {
-  const [resolvedUrl, setResolvedUrl] = useState(url)
+function useCoverTexture(game: Game): THREE.Texture {
+  const updateGame = useStore((s) => s.updateGame)
+  const [resolvedUrl, setResolvedUrl] = useState(TEXTURE_FALLBACK_COVER)
   useEffect(() => {
     let cancelled = false
+    const url = game.coverArt
+    if (!url || url === "/no-image.svg") {
+      setResolvedUrl(TEXTURE_FALLBACK_COVER)
+      return
+    }
+    if (isCoverCacheKey(url)) {
+      loadCoverObjectUrl(url).then((objectUrl) => {
+        if (cancelled) return
+        if (!objectUrl) {
+          setResolvedUrl(TEXTURE_FALLBACK_COVER)
+          updateGame(game.id, {
+            status: "pending",
+            coverState: "queued",
+            coverArt: "/no-image.svg",
+            error: undefined,
+          })
+          startLibraryResolver()
+          return
+        }
+        setResolvedUrl(objectUrl)
+      })
+      return () => {
+        cancelled = true
+        releaseCoverObjectUrl(url)
+      }
+    }
     const probe = new Image()
     probe.crossOrigin = "anonymous"
     probe.onload = () => {
       if (!cancelled) setResolvedUrl(url)
     }
     probe.onerror = () => {
-      if (!cancelled) setResolvedUrl(FALLBACK_COVER)
+      if (cancelled) return
+      setResolvedUrl(TEXTURE_FALLBACK_COVER)
+      if (game.coverState === "cached") {
+        updateGame(game.id, {
+          status: "pending",
+          coverState: "queued",
+          coverArt: "/no-image.svg",
+          error: undefined,
+        })
+        startLibraryResolver()
+        return
+      }
+      if (game.coverState === "fetched") {
+        updateGame(game.id, {
+          status: "error",
+          coverState: "error",
+          coverArt: "/no-image.svg",
+          error: "Cover URL failed",
+        })
+      }
     }
     probe.src = url
     return () => { cancelled = true }
-  }, [url])
+  }, [game, updateGame])
   return useFlippedTexture(resolvedUrl)
 }
 
@@ -102,7 +148,7 @@ function Cartridge3D({ game }: { game: Game }) {
   const bodyBase = useFlippedTexture(BODY_BASE_URL)
   const bodyNormal = useFlippedDataTexture(BODY_NORMAL_URL)
   const bodyRoughness = useFlippedDataTexture(BODY_ROUGHNESS_URL)
-  const gameArt = useCoverTexture(game.coverArt)
+  const gameArt = useCoverTexture(game)
 
   const clone = useMemo(() => {
     const c = scene.clone(true)
@@ -169,6 +215,56 @@ function Cartridge3D({ game }: { game: Game }) {
 /*  On release -> smoothly snaps back to identity rotation.            */
 /* ================================================================== */
 
+function getCoverBadge(game: Game) {
+  if (isCustomCoverKey(game.coverArt)) {
+    return {
+      className: "cart-badge cart-badge--custom",
+      icon: <CheckCircle2 size={13} />,
+      label: "CUSTOM COVER",
+    }
+  }
+  if (game.coverState === "fetching") {
+    return {
+      className: "cart-badge cart-badge--loading",
+      icon: <Loader2 size={13} className="spin" />,
+      label: "FETCHING ART",
+    }
+  }
+  if (game.coverState === "cached") {
+    return {
+      className: "cart-badge cart-badge--cached",
+      icon: <CheckCircle2 size={13} />,
+      label: "FROM CACHE",
+    }
+  }
+  if (game.coverState === "fetched") {
+    return {
+      className: "cart-badge cart-badge--success",
+      icon: <CheckCircle2 size={13} />,
+      label: "COVER READY",
+    }
+  }
+  if (game.coverState === "missing") {
+    return {
+      className: "cart-badge cart-badge--error",
+      icon: <AlertTriangle size={13} />,
+      label: game.error || "NO COVER",
+    }
+  }
+  if (game.coverState === "error") {
+    return {
+      className: "cart-badge cart-badge--error",
+      icon: <AlertTriangle size={13} />,
+      label: game.error || "FETCH FAILED",
+    }
+  }
+  return {
+    className: "cart-badge cart-badge--pending",
+    icon: <span className="cart-badge__dot" />,
+    label: "QUEUED",
+  }
+}
+
 function CartridgeSlot({ game, index }: { game: Game; index: number }) {
   const ref = useRef<THREE.Group>(null!)
   const selectedIndex = useStore((s) => s.selectedIndex)
@@ -176,6 +272,7 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
   const setInspectMode = useStore((s) => s.setInspectMode)
   const [hovered, setHovered] = useState(false)
   const isSelected = index === selectedIndex
+  const showCoverBadges = useStore((s) => s.settings.showCoverBadges)
   useCursor(hovered)
 
   // Drag rotation state (only used when selected)
@@ -280,12 +377,14 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
         document.body.style.cursor = "default"
       }}
     >
-      <Cartridge3D game={game} />
-      {(game.status === "pending" || game.status === "loading") && (
+      <Suspense fallback={null}>
+        <Cartridge3D game={game} />
+      </Suspense>
+      {showCoverBadges && (
         <Html center position={[0, 0.95, 0.3]} zIndexRange={[12, 0]} distanceFactor={4.5}>
-          <div className="cart-badge">
-            <Loader2 size={13} className="spin" />
-            FETCHING ART
+          <div className={getCoverBadge(game).className}>
+            {getCoverBadge(game).icon}
+            {getCoverBadge(game).label}
           </div>
         </Html>
       )}
@@ -341,7 +440,9 @@ function InspectScene({ game }: { game: Game }) {
         lastPointer.current = { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY }
       }}
     >
-      <Cartridge3D game={game} />
+      <Suspense fallback={null}>
+        <Cartridge3D game={game} />
+      </Suspense>
     </group>
   )
 }
@@ -723,3 +824,29 @@ export function Scene() {
 }
 
 useGLTF.preload(MODEL_URL)
+function createPlaceholderCoverUrl() {
+  if (typeof document === "undefined") return "/no-image.svg"
+  const canvas = document.createElement("canvas")
+  canvas.width = 512
+  canvas.height = 512
+  const ctx = canvas.getContext("2d")
+  if (!ctx) return "/no-image.svg"
+  const gradient = ctx.createLinearGradient(0, 0, 512, 512)
+  gradient.addColorStop(0, "#121726")
+  gradient.addColorStop(1, "#06070d")
+  ctx.fillStyle = gradient
+  ctx.fillRect(0, 0, 512, 512)
+  ctx.strokeStyle = "rgba(255,255,255,0.12)"
+  ctx.lineWidth = 10
+  ctx.strokeRect(54, 54, 404, 404)
+  ctx.fillStyle = "rgba(255,255,255,0.92)"
+  ctx.font = "700 54px Arial"
+  ctx.textAlign = "center"
+  ctx.fillText("NO COVER", 256, 250)
+  ctx.fillStyle = "rgba(255,255,255,0.45)"
+  ctx.font = "24px Arial"
+  ctx.fillText("ScreenScraper", 256, 292)
+  return canvas.toDataURL("image/png")
+}
+
+const TEXTURE_FALLBACK_COVER = createPlaceholderCoverUrl()
