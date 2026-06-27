@@ -31,6 +31,10 @@ const CAROUSEL_GAP = 4.15
 const CAROUSEL_DEPTH_STEP = 0.52
 const REFLECTION_LAYER = 1
 
+function clampFrameDelta(delta: number) {
+  return Math.min(delta, 1 / 30)
+}
+
 function getOrbitPosition(yaw: number, pitch: number, radius: number, targetY: number): [number, number, number] {
   const cosPitch = Math.cos(pitch)
   return [
@@ -282,15 +286,17 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
 
   const target = useMemo(() => {
     const offset = index - selectedIndex
-    if (offset === 0) return { x: 0, y: 0.28, z: 1.95, rotY: 0, scale: 1.09 }
+    if (offset === 0) return { x: 0, y: 0.28, z: 1.95, rotY: 0, scale: 1.09, hoverYaw: 0 }
     const sign = Math.sign(offset)
     const abs = Math.abs(offset)
+    const hoverYaw = sign * 0.13
     return {
       x: sign * (CAROUSEL_GAP + (abs - 1) * 1.32),
-      y: 0,
+      y: 0.04,
       z: -0.9 - (abs - 1) * CAROUSEL_DEPTH_STEP,
       rotY: -sign * Math.PI * 0.26,
       scale: Math.max(0.61, 0.83 - (abs - 1) * 0.05),
+      hoverYaw,
     }
   }, [index, selectedIndex])
 
@@ -312,22 +318,23 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
 
   useFrame((state, delta) => {
     if (!ref.current) return
+    const dt = clampFrameDelta(delta)
     const l = THREE.MathUtils.lerp
     const sp = LERP_SPEED
 
     // When not dragging the selected one: decay the rotation offset toward 0 (snap-back)
     if (isSelected && !isDragging) {
-      dragOffset.current.x = l(dragOffset.current.x, 0, 3.5 * delta)
-      dragOffset.current.y = l(dragOffset.current.y, 0, 3.5 * delta)
+      dragOffset.current.x = l(dragOffset.current.x, 0, 3.5 * dt)
+      dragOffset.current.y = l(dragOffset.current.y, 0, 3.5 * dt)
     }
 
     // Position
-    ref.current.position.x = l(ref.current.position.x, target.x, sp * delta)
-    ref.current.position.z = l(ref.current.position.z, target.z, sp * delta)
+    ref.current.position.x = l(ref.current.position.x, target.x, sp * dt)
+    ref.current.position.z = l(ref.current.position.z, target.z, sp * dt)
     let ty = target.y
     if (isSelected && !isDragging) ty += Math.sin(state.clock.elapsedTime * 1.85) * 0.04
     if (hovered && !isSelected) ty += 0.18
-    ref.current.position.y = l(ref.current.position.y, ty, sp * delta)
+    ref.current.position.y = l(ref.current.position.y, ty, sp * dt)
 
     // Rotation (base from carousel + face rotation + drag offset)
     let targetRotY = target.rotY + CARTRIDGE_FACE_ROTATION
@@ -336,16 +343,16 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
       targetRotY += dragOffset.current.y
       targetRotX = dragOffset.current.x
     } else if (hovered) {
-      targetRotY *= 0.6
+      targetRotY += target.hoverYaw
     }
-    ref.current.rotation.y = l(ref.current.rotation.y, targetRotY, (isDragging ? 12 : sp) * delta)
-    ref.current.rotation.x = l(ref.current.rotation.x, targetRotX, (isDragging ? 12 : sp) * delta)
+    ref.current.rotation.y = l(ref.current.rotation.y, targetRotY, (isDragging ? 12 : sp) * dt)
+    ref.current.rotation.x = l(ref.current.rotation.x, targetRotX, (isDragging ? 12 : sp) * dt)
 
     // Scale
-    const ts = hovered && !isSelected ? target.scale * 1.05 : target.scale
-    ref.current.scale.x = l(ref.current.scale.x, ts, sp * delta)
-    ref.current.scale.y = l(ref.current.scale.y, ts, sp * delta)
-    ref.current.scale.z = l(ref.current.scale.z, ts, sp * delta)
+    const ts = hovered && !isSelected ? target.scale * 1.06 : target.scale
+    ref.current.scale.x = l(ref.current.scale.x, ts, sp * dt)
+    ref.current.scale.y = l(ref.current.scale.y, ts, sp * dt)
+    ref.current.scale.z = l(ref.current.scale.z, ts, sp * dt)
   })
 
   return (
@@ -424,10 +431,11 @@ function InspectScene({ game }: { game: Game }) {
 
   useFrame((_, delta) => {
     if (!groupRef.current) return
-    if (!isDragging) rotation.current.y += delta * 0.18
+    const dt = clampFrameDelta(delta)
+    if (!isDragging) rotation.current.y += dt * 0.18
     const l = THREE.MathUtils.lerp
-    groupRef.current.rotation.x = l(groupRef.current.rotation.x, rotation.current.x, 10 * delta)
-    groupRef.current.rotation.y = l(groupRef.current.rotation.y, rotation.current.y, 10 * delta)
+    groupRef.current.rotation.x = l(groupRef.current.rotation.x, rotation.current.x, 10 * dt)
+    groupRef.current.rotation.y = l(groupRef.current.rotation.y, rotation.current.y, 10 * dt)
   })
 
   return (
@@ -507,12 +515,13 @@ function CameraController({ inspectMode }: { inspectMode: boolean }) {
   const cameraZoom = useStore((s) => s.settings.cameraZoom)
 
   useFrame((_, delta) => {
+    const dt = clampFrameDelta(delta)
     const browseZ = cameraZoom        // user-tunable browse distance
     const browseY = 2.5 + (cameraZoom - 9) * 0.12
     const targetPos = inspectMode
       ? new THREE.Vector3(0, 0.5, 5.2)
       : new THREE.Vector3(0, browseY, browseZ)
-    camera.position.lerp(targetPos, 2.5 * delta)
+    camera.position.lerp(targetPos, 2.5 * dt)
     const targetLook = inspectMode ? new THREE.Vector3(0, 0.35, 0) : new THREE.Vector3(0, 1.3, 0)
     camera.lookAt(targetLook)
   })

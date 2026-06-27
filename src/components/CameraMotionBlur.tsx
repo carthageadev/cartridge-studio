@@ -1,4 +1,4 @@
-import { useRef, useMemo } from "react"
+import { useRef, useMemo, useEffect } from "react"
 import { useFrame, useThree } from "@react-three/fiber"
 import { Effect, EffectAttribute } from "postprocessing"
 import { Uniform, Vector2, Vector3 } from "three"
@@ -54,6 +54,20 @@ export function CameraMotionBlur({
   const prevPos = useRef(new Vector3())
   const { camera } = useThree()
   const velocity = useRef(new Vector2(0, 0))
+
+  useEffect(() => {
+    const syncPrev = () => {
+      prevPos.current.copy(camera.position)
+      velocity.current.set(0, 0)
+      effect.uniforms.get("uVelocity")!.value.set(0, 0)
+    }
+    syncPrev()
+    const onVisibilityChange = () => {
+      if (document.hidden) syncPrev()
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange)
+    return () => document.removeEventListener("visibilitychange", onVisibilityChange)
+  }, [camera, effect])
 
   useFrame(() => {
     effect.uniforms.get("uIntensity")!.value = enabled ? intensity : 0
