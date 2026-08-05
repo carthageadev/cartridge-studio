@@ -23,3 +23,6 @@ desktop.ini
 # IDE
 .vscode/settings.json
 .idea/
+
+#Heavy files 
+3d*
