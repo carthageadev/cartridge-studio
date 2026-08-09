@@ -24,5 +24,6 @@ desktop.ini
 .vscode/settings.json
 .idea/
 
-#Heavy files 
+#Heavy files
+3d resources/
 3d*/
