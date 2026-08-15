@@ -1,0 +1,21 @@
+# Node modules and build artifacts
+node_modules/
+dist/
+.vite/
+npm-debug.log
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+!.env.example
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/settings.json
+.idea/
