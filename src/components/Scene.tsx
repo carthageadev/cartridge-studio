@@ -15,8 +15,14 @@ import { isCoverCacheKey, isCustomCoverKey, loadCoverObjectUrl, releaseCoverObje
 /*  Asset URLs                                                         */
 /* ================================================================== */
 
+// 3D asset URLs are read from the environment so the repo never
+// contains model files or their URLs. Set VITE_3D_BASE_URL in
+// .env.local to point at your own host (e.g. an S3 bucket).
+// Falls back to the old CDN path if unset.
 const REPO = "AhmedBenAbdallahDev/cartridge-studio@main"
-const PREFIX = `https://cdn.jsdelivr.net/gh/${REPO}/3d%20resources`
+const PREFIX =
+  import.meta.env.VITE_3D_BASE_URL ??
+  `https://cdn.jsdelivr.net/gh/${REPO}/3d%20resources`
 
 const MODEL_URL = `${PREFIX}/model.glb`
 const BODY_BASE_URL = `${PREFIX}/diffuse.jpg`
