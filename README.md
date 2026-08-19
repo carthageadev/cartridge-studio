@@ -1,13 +1,16 @@
-# Cartridge Studio - Legacy Starting Point
+# Legacy - Preserved Concept Snapshot
 
-A clean starting point for building a 3D N64 cartridge studio app from scratch. This branch has no app code yet, just the project scaffolding and docs to kick off development.
+This branch preserves the original RetroFlow 3D concept: a handheld-shell-style N64 library browser with ScreenScraper integration. It is **not** the active development line - use `main` for the current production app.
+
+## Goal
+
+Keep a working reference of the original vision so design decisions and early experiments aren't lost.
 
 ## What's here
 
-- Vite + React + TypeScript project setup
-- Tailwind CSS
-- Path alias `@/` -> `src/`
-- A minimal `src/` with a placeholder app
+- Project scaffolding (Vite + React + TypeScript)
+- `3d model and api spec.md` - original asset and API notes
+- `api/config.ts` - secure serverless 3D asset URL endpoint
 
 ## Getting started
 
@@ -17,9 +20,3 @@ bun dev
 ```
 
 Open http://localhost:3000
-
-## Next steps
-
-- Add the 3D cartridge model and scene
-- Wire up ScreenScraper for cover art and metadata
-- Build the carousel UI
