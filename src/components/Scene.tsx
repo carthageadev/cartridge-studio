@@ -13,13 +13,23 @@ import { useStore } from "../store"
 /*  Asset URLs                                                         */
 /* ================================================================== */
 
-const REPO = "AhmedBenAbdallahDev/cartridge-studio@main"
-const PREFIX = `https://cdn.jsdelivr.net/gh/${REPO}/3d%20resources`
+// 3D asset URLs are served at runtime from the serverless config
+// endpoint (/api/config), which reads a server-only env var
+// (THREE_D_BASE_URL). The URL is never baked into the frontend bundle.
+// Falls back to local /public paths if the server returns nothing.
 
-const MODEL_URL = `${PREFIX}/model.glb`
-const BODY_BASE_URL = `${PREFIX}/diffuse.jpg`
-const BODY_NORMAL_URL = `${PREFIX}/normal.png`
-const BODY_ROUGHNESS_URL = `${PREFIX}/roughness.png`
+// Resolved 3D base URL, set at startup from /api/config.
+let _3dBaseUrl = (typeof import.meta !== 'undefined' ? (import.meta as unknown as { env: Record<string, string> }).env?.VITE_3D_BASE_URL?.trim() : '') || ''
+function assetUrl(path: string): string {
+  return _3dBaseUrl ? `${_3dBaseUrl}${path}` : path
+}
+let _3dBaseReadyResolve: () => void
+export const _3dBaseReady: Promise<void> = new Promise((r) => { _3dBaseReadyResolve = r })
+if (typeof fetch !== 'undefined') {
+  fetch('/api/config').then((res) => res.json() as Promise<{ baseUrl?: string }>)
+    .then((data) => { const s = data.baseUrl?.trim(); if (s) _3dBaseUrl = s }).catch(() => {}).then(() => _3dBaseReadyResolve())
+} else { _3dBaseReadyResolve() }
+
 const FALLBACK_COVER = `/no-image.svg`
 const SCENE_BG = "#07111c"
 
@@ -103,13 +113,14 @@ function useCoverTexture(url: string): THREE.Texture {
 /* ================================================================== */
 
 function Cartridge3D({ game }: { game: Game }) {
-  const gltf = useGLTF(MODEL_URL, true)
+  const modelUrl = assetUrl('/model.glb')
+  const gltf = useGLTF(modelUrl, true)
   const scene = gltf.scene
   const tweaks = useStore((s) => s.sceneTweaks)
 
-  const bodyBase = useFlippedTexture(BODY_BASE_URL)
-  const bodyNormal = useFlippedDataTexture(BODY_NORMAL_URL)
-  const bodyRoughness = useFlippedDataTexture(BODY_ROUGHNESS_URL)
+  const bodyBase = useFlippedTexture(assetUrl('/diffuse.jpg'))
+  const bodyNormal = useFlippedDataTexture(assetUrl('/normal.png'))
+  const bodyRoughness = useFlippedDataTexture(assetUrl('/roughness.png'))
   const gameArt = useCoverTexture(game.coverArt)
 
   const clone = useMemo(() => {
@@ -735,4 +746,4 @@ export function Scene() {
   )
 }
 
-useGLTF.preload(MODEL_URL)
+_3dBaseReady.then(() => { useGLTF.preload(assetUrl('/model.glb')) })
