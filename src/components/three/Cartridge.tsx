@@ -1,8 +1,41 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useRef, useState, use } from 'react'
 import * as THREE from 'three'
 import { useGLTF, useTexture } from '@react-three/drei'
 
-const MODEL_URL = '/model.glb'
+// 3D asset URLs are served at runtime from the serverless config
+// endpoint (/api/config), which reads a server-only env var
+// (THREE_D_BASE_URL). The URL is never baked into the frontend bundle
+// or committed to the repo. Falls back to local /public paths if the
+// server returns nothing.
+let baseUrlPromise: Promise<string> | null = null
+
+function getAssetBaseUrl(): Promise<string> {
+  if (!baseUrlPromise) {
+    baseUrlPromise = (async () => {
+      try {
+        const res = await fetch('/api/config')
+        const data = (await res.json()) as { baseUrl?: string }
+        return data.baseUrl?.trim() || ''
+      } catch {
+        return ''
+      }
+    })()
+  }
+  return baseUrlPromise
+}
+
+// Suspends until the base URL is resolved, then builds the asset URLs.
+function useAssetUrls() {
+  const baseUrl = use(getAssetBaseUrl())
+  const prefix = baseUrl || ''
+  return {
+    model: `${prefix}/model.glb`,
+    bodyBase: `${prefix}/diffuse.jpg`,
+    bodyNormal: `${prefix}/normal.png`,
+    bodyRoughness: `${prefix}/roughness.png`,
+  }
+}
+
 const FALLBACK_LABEL = '/gameart.png'
 
 /** Final width of a cartridge in world units after auto-fit. */
@@ -73,13 +106,14 @@ interface CartridgeModelProps {
  * (measured Box3 -> centered, CART_WIDTH wide) and spin it 180° to face camera.
  */
 export function CartridgeModel({ labelUrl }: CartridgeModelProps) {
-  const gltf = useGLTF(MODEL_URL)
+  const { model, bodyBase, bodyNormal, bodyRoughness } = useAssetUrls()
+  const gltf = useGLTF(model)
   const labelTex = useLabelTexture(labelUrl)
 
   const shellMaps = useTexture({
-    map: '/diffuse.jpg',
-    normalMap: '/normal.png',
-    roughnessMap: '/roughness.png',
+    map: bodyBase,
+    normalMap: bodyNormal,
+    roughnessMap: bodyRoughness,
   })
 
   const { root, scale, center, labelMat } = useMemo(() => {
@@ -138,8 +172,12 @@ export function CartridgeModel({ labelUrl }: CartridgeModelProps) {
   )
 }
 
-useGLTF.preload(MODEL_URL)
-useTexture.preload(FALLBACK_LABEL)
-useTexture.preload('/diffuse.jpg')
-useTexture.preload('/normal.png')
-useTexture.preload('/roughness.png')
+// Preload the model and textures once the base URL is resolved.
+getAssetBaseUrl().then((baseUrl) => {
+  const prefix = baseUrl || ''
+  useGLTF.preload(`${prefix}/model.glb`)
+  useTexture.preload(FALLBACK_LABEL)
+  useTexture.preload(`${prefix}/diffuse.jpg`)
+  useTexture.preload(`${prefix}/normal.png`)
+  useTexture.preload(`${prefix}/roughness.png`)
+})
