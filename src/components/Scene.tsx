@@ -1,4 +1,4 @@
-import { useRef, useMemo, useEffect, useState, Suspense } from "react"
+import { useRef, useMemo, useEffect, useState, Suspense, use } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { Html, useCursor, useGLTF, useTexture, Environment, Sparkles, ContactShadows } from "@react-three/drei"
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing"
@@ -15,19 +15,42 @@ import { isCoverCacheKey, isCustomCoverKey, loadCoverObjectUrl, releaseCoverObje
 /*  Asset URLs                                                         */
 /* ================================================================== */
 
-// 3D asset URLs are read from the environment so the repo never
-// contains model files or their URLs. Set VITE_3D_BASE_URL in
-// .env.local to point at your own host (e.g. an S3 bucket).
-// Falls back to the old CDN path if unset.
+// 3D asset URLs are served at runtime from the serverless config
+// endpoint (/api/config), which reads a server-only env var
+// (THREE_D_BASE_URL). The URL is never baked into the frontend bundle
+// or committed to the repo. Falls back to the old CDN path if the
+// server returns nothing.
 const REPO = "AhmedBenAbdallahDev/cartridge-studio@main"
-const PREFIX =
-  import.meta.env.VITE_3D_BASE_URL ??
-  `https://cdn.jsdelivr.net/gh/${REPO}/3d%20resources`
+const CDN_PREFIX = `https://cdn.jsdelivr.net/gh/${REPO}/3d%20resources`
 
-const MODEL_URL = `${PREFIX}/model.glb`
-const BODY_BASE_URL = `${PREFIX}/diffuse.jpg`
-const BODY_NORMAL_URL = `${PREFIX}/normal.png`
-const BODY_ROUGHNESS_URL = `${PREFIX}/roughness.png`
+let baseUrlPromise: Promise<string> | null = null
+
+function getAssetBaseUrl(): Promise<string> {
+  if (!baseUrlPromise) {
+    baseUrlPromise = (async () => {
+      try {
+        const res = await fetch("/api/config")
+        const data = (await res.json()) as { baseUrl?: string }
+        return data.baseUrl?.trim() || CDN_PREFIX
+      } catch {
+        return CDN_PREFIX
+      }
+    })()
+  }
+  return baseUrlPromise
+}
+
+// Suspends until the base URL is resolved, then builds the asset URLs.
+function useAssetUrls() {
+  const baseUrl = use(getAssetBaseUrl())
+  return {
+    model: `${baseUrl}/model.glb`,
+    bodyBase: `${baseUrl}/diffuse.jpg`,
+    bodyNormal: `${baseUrl}/normal.png`,
+    bodyRoughness: `${baseUrl}/roughness.png`,
+  }
+}
+
 const SCENE_BG = "#07111c"
 
 const TARGET_HEIGHT = 2.8
@@ -151,13 +174,14 @@ function useCoverTexture(game: Game): THREE.Texture {
 /* ================================================================== */
 
 function Cartridge3D({ game }: { game: Game }) {
-  const gltf = useGLTF(MODEL_URL, true)
+  const { model, bodyBase, bodyNormal, bodyRoughness } = useAssetUrls()
+  const gltf = useGLTF(model, true)
   const scene = gltf.scene
   const tweaks = useStore((s) => s.sceneTweaks)
 
-  const bodyBase = useFlippedTexture(BODY_BASE_URL)
-  const bodyNormal = useFlippedDataTexture(BODY_NORMAL_URL)
-  const bodyRoughness = useFlippedDataTexture(BODY_ROUGHNESS_URL)
+  const bodyBaseTex = useFlippedTexture(bodyBase)
+  const bodyNormalTex = useFlippedDataTexture(bodyNormal)
+  const bodyRoughnessTex = useFlippedDataTexture(bodyRoughness)
   const gameArt = useCoverTexture(game)
 
   const clone = useMemo(() => {
@@ -838,7 +862,10 @@ export function Scene() {
   )
 }
 
-useGLTF.preload(MODEL_URL)
+// Preload the model once the base URL is resolved.
+getAssetBaseUrl().then((baseUrl) => {
+  useGLTF.preload(`${baseUrl}/model.glb`)
+})
 function createPlaceholderCoverUrl() {
   if (typeof document === "undefined") return "/no-image.svg"
   const canvas = document.createElement("canvas")
