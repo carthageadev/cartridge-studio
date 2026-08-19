@@ -80,7 +80,27 @@ interface TextureConfig {
 
 // -----------------------------------------------------------------------------
 // Static asset options - only the new cart textures + label stickers
+// URLs are built from the runtime 3D base URL (served via /api/config).
 // -----------------------------------------------------------------------------
+
+// Resolved 3D base URL, set at startup from VITE_3D_BASE_URL (build-time
+// env) or /api/config (runtime, server-only env THREE_D_BASE_URL).
+// Falls back to local root (dev) if neither is set.
+let ASSET_BASE_URL = (typeof import.meta !== 'undefined' ? (import.meta as unknown as { env: Record<string, string> }).env?.VITE_3D_BASE_URL?.trim() : '') || ''
+export function getAssetBaseUrl(): string { return ASSET_BASE_URL }
+let assetBaseReadyResolve: () => void
+export const assetBaseReady: Promise<void> = new Promise((r) => {
+  assetBaseReadyResolve = r
+})
+const apiConfigPromise = typeof fetch !== 'undefined'
+  ? fetch('/api/config')
+      .then((res) => res.json() as Promise<{ baseUrl?: string }>)
+      .then((data) => { const s = data.baseUrl?.trim(); if (s) ASSET_BASE_URL = s })
+      .catch(() => {})
+      .then(() => assetBaseReadyResolve())
+  : Promise.resolve().then(() => assetBaseReadyResolve())
+export { assetUrl, apiConfigPromise }
+
 const CART_ASSETS = [
     { label: '(Unassigned)', value: '' },
     { label: 'Cart Base Color', value: '/diffuse.jpg' },
