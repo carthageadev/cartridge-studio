@@ -162,7 +162,7 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
             <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Visual Effects</p>
             <div className="rounded-2xl bg-white/[0.03] border border-white/[0.06] divide-y divide-white/[0.06]">
               <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-white/80">Vignette</span><Switch checked={sceneTweaks.vignetteEnabled} onCheckedChange={(checked) => updateSceneTweaks({ vignetteEnabled: checked })} /></div>
-              <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-white/80">Motion Blur</span><Switch checked={sceneTweaks.motionBlurEnabled} onCheckedChange={(checked) => updateSceneTweaks({ motionBlurEnabled: checked })} /></div>
+              <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-white/80">Floor Reflection</span><Switch checked={sceneTweaks.floorReflectionEnabled} onCheckedChange={(checked) => updateSceneTweaks({ floorReflectionEnabled: checked })} /></div>
             </div>
           </div>
 

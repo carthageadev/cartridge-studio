@@ -2,7 +2,6 @@ import { useRef, useMemo, useEffect, useState, Suspense, use } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
 import { Html, useCursor, useGLTF, useTexture, Environment, Sparkles, ContactShadows } from "@react-three/drei"
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing"
-import { CameraMotionBlur } from "./CameraMotionBlur"
 import * as THREE from "three"
 import { button, folder, useControls } from "leva"
 import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"
@@ -487,26 +486,28 @@ function Floor() {
   const tweaks = useStore((s) => s.sceneTweaks)
   return (
     <>
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[80, 42]} />
-        <LayeredReflectorMaterial
-          includeEnvironment={tweaks.floorReflectionSource === "environment"}
-          layer={REFLECTION_LAYER}
-          blur={[tweaks.floorBlurX, tweaks.floorBlurY]}
-          resolution={tweaks.floorResolution}
-          mixBlur={1.8}
-          mixStrength={tweaks.floorMixStrength}
-          roughness={tweaks.floorRoughness}
-          depthScale={tweaks.floorDepthScale}
-          minDepthThreshold={tweaks.floorMinDepthThreshold}
-          maxDepthThreshold={tweaks.floorMaxDepthThreshold}
-          color={tweaks.floorColor}
-          metalness={tweaks.floorMetalness}
-          envMapIntensity={0}
-          mirror={tweaks.floorMirror}
-          fovMultiplier={tweaks.floorFovMultiplier}
-        />
-      </mesh>
+      {tweaks.floorReflectionEnabled && (
+        <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
+          <planeGeometry args={[80, 42]} />
+          <LayeredReflectorMaterial
+            includeEnvironment={tweaks.floorReflectionSource === "environment"}
+            layer={REFLECTION_LAYER}
+            blur={[tweaks.floorBlurX, tweaks.floorBlurY]}
+            resolution={tweaks.floorResolution}
+            mixBlur={1.8}
+            mixStrength={tweaks.floorMixStrength}
+            roughness={tweaks.floorRoughness}
+            depthScale={tweaks.floorDepthScale}
+            minDepthThreshold={tweaks.floorMinDepthThreshold}
+            maxDepthThreshold={tweaks.floorMaxDepthThreshold}
+            color={tweaks.floorColor}
+            metalness={tweaks.floorMetalness}
+            envMapIntensity={0}
+            mirror={tweaks.floorMirror}
+            fovMultiplier={tweaks.floorFovMultiplier}
+          />
+        </mesh>
+      )}
       <ContactShadows
         position={[0, 0.0, 0]}
         opacity={tweaks.shadowOpacity}
@@ -727,6 +728,7 @@ function SceneLevaControls() {
       labelEnvIntensity: { value: sceneTweaks.labelEnvIntensity, min: 0, max: 2, step: 0.01, onChange: (value) => updateSceneTweaks({ labelEnvIntensity: value }) },
     }),
     Floor: folder({
+      floorReflectionEnabled: { value: sceneTweaks.floorReflectionEnabled, onChange: (value) => updateSceneTweaks({ floorReflectionEnabled: value }) },
       floorReflectionSource: {
         value: sceneTweaks.floorReflectionSource,
         options: { Flat: "flat", Environment: "environment" },
@@ -756,10 +758,6 @@ function SceneLevaControls() {
     Vignette: folder({
       vignetteEnabled: { value: sceneTweaks.vignetteEnabled, onChange: (value) => updateSceneTweaks({ vignetteEnabled: value }) },
       vignetteIntensity: { value: sceneTweaks.vignetteIntensity, min: 0, max: 5, step: 0.01, onChange: (value) => updateSceneTweaks({ vignetteIntensity: value }) },
-    }),
-    MotionBlur: folder({
-      motionBlurEnabled: { value: sceneTweaks.motionBlurEnabled, onChange: (value) => updateSceneTweaks({ motionBlurEnabled: value }) },
-      motionBlurIntensity: { value: sceneTweaks.motionBlurIntensity, min: 0, max: 1, step: 0.01, onChange: (value) => updateSceneTweaks({ motionBlurIntensity: value }) },
     }),
     Actions: folder({
       save: button(() => saveSceneTweaks()),
@@ -818,10 +816,6 @@ function SceneContent() {
           eskil={false}
           offset={0.5}
           darkness={sceneTweaks.vignetteEnabled ? sceneTweaks.vignetteIntensity : 0}
-        />
-        <CameraMotionBlur
-          enabled={sceneTweaks.motionBlurEnabled}
-          intensity={sceneTweaks.motionBlurIntensity}
         />
       </EffectComposer>
     </>

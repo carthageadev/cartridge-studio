@@ -32,9 +32,9 @@
   }
   body { margin: 0; }
   ::selection { background: rgba(99, 102, 241, 0.4); color: white; }
-  ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: transparent; }
-  ::-webkit-scrollbar-thumb { background: rgba(255, 255, 255, 0.16); border-radius: 999px; }
+  /* Scrollbars hidden globally */
+  * { scrollbar-width: none; -ms-overflow-style: none; }
+  ::-webkit-scrollbar { display: none; width: 0; height: 0; }
   canvas {
     display: block; width: 100% !important; height: 100% !important;
     outline: none; touch-action: none;

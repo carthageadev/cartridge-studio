@@ -60,6 +60,7 @@ interface SceneTweaks {
   rimPenumbra: number
   rimDistance: number
   rimDecay: number
+  floorReflectionEnabled: boolean
   floorMirror: number
   floorMetalness: number
   floorColor: string
@@ -81,8 +82,6 @@ interface SceneTweaks {
   bloomRadius: number
   vignetteEnabled: boolean
   vignetteIntensity: number
-  motionBlurEnabled: boolean
-  motionBlurIntensity: number
   shadowOpacity: number
   shadowScale: number
   shadowBlur: number
@@ -191,6 +190,7 @@ const defaultSceneTweaks: SceneTweaks = {
   rimPenumbra: 0.39,
   rimDistance: 18,
   rimDecay: 0.79,
+  floorReflectionEnabled: false,
   floorMirror: 1,
   floorMetalness: 0,
   floorColor: "#303c49",
@@ -212,8 +212,6 @@ const defaultSceneTweaks: SceneTweaks = {
   bloomRadius: 0.5,
   vignetteEnabled: true,
   vignetteIntensity: 0.65,
-  motionBlurEnabled: false,
-  motionBlurIntensity: 0.3,
   shadowOpacity: 1,
   shadowScale: 80,
   shadowBlur: 6,
@@ -286,8 +284,6 @@ const darkFlowPreset: SceneTweaks = {
   bloomRadius: 0.5,
   vignetteEnabled: true,
   vignetteIntensity: 0.65,
-  motionBlurEnabled: false,
-  motionBlurIntensity: 0.3,
   shadowOpacity: 1,
   shadowScale: 80,
   shadowBlur: 6,
@@ -363,8 +359,6 @@ const glassyFlowPreset: SceneTweaks = {
   bloomRadius: 0.83,
   vignetteEnabled: true,
   vignetteIntensity: 0.25,
-  motionBlurEnabled: false,
-  motionBlurIntensity: 0.3,
   shadowOpacity: 0,
   shadowScale: 2,
   shadowBlur: 0.2,
