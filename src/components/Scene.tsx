@@ -204,10 +204,10 @@ function Cartridge3D({ game }: { game: Game }) {
           // Respect the roughness map: it's the artist's variation.
           // metalness = 0 always.
           mesh.material = new THREE.MeshStandardMaterial({
-            map: bodyBase,
-            normalMap: bodyNormal,
+            map: bodyBaseTex,
+            normalMap: bodyNormalTex,
             normalScale: new THREE.Vector2(1.0, 1.0),
-            roughnessMap: bodyRoughness,
+            roughnessMap: bodyRoughnessTex,
             roughness: tweaks.bodyRoughness,
             metalness: 0.0,
             envMapIntensity: tweaks.bodyEnvIntensity,
@@ -230,7 +230,7 @@ function Cartridge3D({ game }: { game: Game }) {
         }
       }
     })
-  }, [clone, bodyBase, bodyNormal, bodyRoughness, gameArt, tweaks.bodyEnvIntensity, tweaks.bodyRoughness, tweaks.labelEnvIntensity, tweaks.labelRoughness])
+  }, [clone, bodyBaseTex, bodyNormalTex, bodyRoughnessTex, gameArt, tweaks.bodyEnvIntensity, tweaks.bodyRoughness, tweaks.labelEnvIntensity, tweaks.labelRoughness])
 
   return <primitive object={clone} />
 }

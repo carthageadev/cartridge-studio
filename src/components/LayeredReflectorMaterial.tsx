@@ -199,6 +199,7 @@ export const LayeredReflectorMaterial = React.forwardRef<any, LayeredReflectorMa
   }, [depthScale, depthToBlurRatioBias, distortion, distortionMap, gl, blurX, blurY, hasBlur, maxDepthThreshold, minDepthThreshold, mirror, mixBlur, mixContrast, mixStrength, resolution, textureMatrix])
 
   useFrame(() => {
+    try {
     const parent = materialRef.current?.parent || materialRef.current?.__r3f?.parent?.object
     if (!parent) return
     if (!beforeRender()) return
@@ -239,6 +240,9 @@ export const LayeredReflectorMaterial = React.forwardRef<any, LayeredReflectorMa
     gl.shadowMap.autoUpdate = currentShadowAutoUpdate
     parent.visible = true
     gl.setRenderTarget(null)
+    } catch {
+      // Prevent reflector errors from crashing the render loop
+    }
   })
 
   return React.createElement("meshReflectorMaterialImpl", _extends({
