@@ -27,4 +27,5 @@ desktop.ini
 #Heavy files
 3d resources/
 3d*/
+!public/3d/
 .vercel
