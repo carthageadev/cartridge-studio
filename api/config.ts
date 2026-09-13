@@ -1,16 +1,12 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 // Server-side config endpoint.
-// Returns pre-built 3D asset URLs entirely from server-only env vars,
-// so neither the base URL nor the filenames are baked into the frontend
-// bundle or committed to the repo.
+// Returns 3D asset URLs entirely from a single server-only env var,
+// so nothing is baked into the frontend bundle or committed to the repo.
 //
-// Required env vars:
-//   THREE_D_BASE_URL          - base directory URL (e.g. S3 bucket or Archive item)
-//   THREE_D_MODEL             - model filename
-//   THREE_D_BODY_BASE         - base color texture filename
-//   THREE_D_BODY_NORMAL       - normal map filename
-//   THREE_D_BODY_ROUGHNESS    - roughness map filename
+// Set THREE_D_ASSETS in your Vercel project env (or .env.local for
+// local dev) as a JSON string:
+//   {"model":"https://...glb","bodyBase":"https://...jpg","bodyNormal":"https://...png","bodyRoughness":"https://...png"}
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
@@ -20,18 +16,12 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     return res.status(200).end()
   }
 
-  const base = (process.env.THREE_D_BASE_URL ?? '').replace(/\/+$/, '')
-  const model = process.env.THREE_D_MODEL ?? ''
-  const bodyBase = process.env.THREE_D_BODY_BASE ?? ''
-  const bodyNormal = process.env.THREE_D_BODY_NORMAL ?? ''
-  const bodyRoughness = process.env.THREE_D_BODY_ROUGHNESS ?? ''
-
-  const assets = base && model ? {
-    model: `${base}/${model}`,
-    bodyBase: `${base}/${bodyBase}`,
-    bodyNormal: `${base}/${bodyNormal}`,
-    bodyRoughness: `${base}/${bodyRoughness}`,
-  } : null
+  let assets = null
+  try {
+    assets = JSON.parse(process.env.THREE_D_ASSETS ?? 'null')
+  } catch {
+    // invalid JSON - leave assets null
+  }
 
   return res.status(200).json({ assets })
 }
