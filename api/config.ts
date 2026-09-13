@@ -1,8 +1,9 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 // Server-side config endpoint.
-// Returns the 3D asset base URL from a server-only env var (no VITE_
-// prefix), so the URL is never baked into the frontend bundle.
+// Returns pre-built 3D asset URLs from a server-only env var (no VITE_
+// prefix), so neither the base URL nor the filenames are baked into
+// the frontend bundle.
 //
 // Set THREE_D_BASE_URL in your Vercel project env (or .env.local for
 // local dev). For a private S3 bucket, point this at an endpoint that
@@ -16,6 +17,13 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
     return res.status(200).end()
   }
 
-  const baseUrl = process.env.THREE_D_BASE_URL ?? ''
-  return res.status(200).json({ baseUrl })
+  const base = process.env.THREE_D_BASE_URL ?? ''
+  const assets = base ? {
+    model: `${base}/model.glb`,
+    bodyBase: `${base}/diffuse.jpg`,
+    bodyNormal: `${base}/normal.png`,
+    bodyRoughness: `${base}/roughness.png`,
+  } : null
+
+  return res.status(200).json({ assets })
 }

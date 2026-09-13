@@ -17,31 +17,32 @@ import { isCoverCacheKey, isCustomCoverKey, loadCoverObjectUrl, releaseCoverObje
 
 // 3D asset URLs are served at runtime from the serverless config
 // endpoint (/api/config), which reads a server-only env var
-// (THREE_D_BASE_URL). The URL is never baked into the frontend bundle
-// or committed to the repo.
+// (THREE_D_BASE_URL). Filenames are resolved server-side so no asset
+// paths are baked into the frontend bundle.
 
-let baseUrlPromise: Promise<string> | null = null
-
-function getAssetBaseUrl(): Promise<string> {
-  if (!baseUrlPromise) {
-    baseUrlPromise = (async () => {
-      const res = await fetch("/api/config")
-      const data = (await res.json()) as { baseUrl?: string }
-      return data.baseUrl?.trim() ?? ""
-    })()
-  }
-  return baseUrlPromise
+interface AssetUrls {
+  model: string
+  bodyBase: string
+  bodyNormal: string
+  bodyRoughness: string
 }
 
-// Suspends until the base URL is resolved, then builds the asset URLs.
-function useAssetUrls() {
-  const baseUrl = use(getAssetBaseUrl())
-  return {
-    model: `${baseUrl}/model.glb`,
-    bodyBase: `${baseUrl}/diffuse.jpg`,
-    bodyNormal: `${baseUrl}/normal.png`,
-    bodyRoughness: `${baseUrl}/roughness.png`,
+let assetUrlsPromise: Promise<AssetUrls> | null = null
+
+function getAssetUrls(): Promise<AssetUrls> {
+  if (!assetUrlsPromise) {
+    assetUrlsPromise = (async () => {
+      const res = await fetch("/api/config")
+      const data = (await res.json()) as { assets?: AssetUrls }
+      if (!data.assets) throw new Error("3D asset URLs not configured")
+      return data.assets
+    })()
   }
+  return assetUrlsPromise
+}
+
+function useAssetUrls() {
+  return use(getAssetUrls())
 }
 
 const SCENE_BG = "#07111c"
@@ -856,8 +857,8 @@ export function Scene() {
 }
 
 // Preload the model once the base URL is resolved.
-getAssetBaseUrl().then((baseUrl) => {
-  useGLTF.preload(`${baseUrl}/model.glb`)
+getAssetUrls().then((urls) => {
+  useGLTF.preload(urls.model)
 })
 function createPlaceholderCoverUrl() {
   if (typeof document === "undefined") return "/no-image.svg"
