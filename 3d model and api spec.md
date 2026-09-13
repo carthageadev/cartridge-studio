@@ -11,22 +11,22 @@ THREE_D_BASE_URL=https://archive.org/download/7535476
 This loads the following public Internet Archive files:
 
 - `https://archive.org/download/7535476/model.glb`
-- `https://archive.org/download/7535476/diffuse.jpg`
-- `https://archive.org/download/7535476/normal.png`
-- `https://archive.org/download/7535476/roughness.png`
+- `https://archive.org/download/7535476/diffuse.webp`
+- `https://archive.org/download/7535476/normal.webp`
+- `https://archive.org/download/7535476/roughness.webp`
 
 The model has two meshes:
 
-- `model_2` - the plastic shell. Uses `diffuse.jpg` as the base color, plus normal and roughness maps.
+- `model_2` - the plastic shell. Uses `diffuse.webp` as the base color, plus normal and roughness maps.
 - `boxart` - the label face. Shows per-game sticker art as a texture (`flipY = false`).
 
 ### Texture maps
 
 | Map | File |
 | --- | --- |
-| Base color | `diffuse.jpg` |
-| Normal | `normal.png` |
-| Roughness | `roughness.png` |
+| Base color | `diffuse.webp` |
+| Normal | `normal.webp` |
+| Roughness | `roughness.webp` |
 
 ## ScreenScraper API
 

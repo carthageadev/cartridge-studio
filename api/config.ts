@@ -14,9 +14,9 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
   return res.status(200).json({
     assets: {
       model: '/3d/model.glb',
-      bodyBase: '/3d/diffuse.jpg',
-      bodyNormal: '/3d/normal.png',
-      bodyRoughness: '/3d/roughness.png',
+      bodyBase: '/3d/diffuse.webp',
+      bodyNormal: '/3d/normal.webp',
+      bodyRoughness: '/3d/roughness.webp',
     },
   })
 }
