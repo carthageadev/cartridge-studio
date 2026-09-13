@@ -18,7 +18,12 @@ export default async function handler(_req: VercelRequest, res: VercelResponse) 
 
   let assets = null
   try {
-    assets = JSON.parse(process.env.THREE_D_ASSETS ?? 'null')
+    const raw = JSON.parse(process.env.THREE_D_ASSETS ?? 'null')
+    if (raw && typeof raw === 'object') {
+      assets = Object.fromEntries(
+        Object.entries(raw as Record<string, string>).map(([k, v]) => [k, `/api/asset?url=${encodeURIComponent(v)}`])
+      )
+    }
   } catch {
     // invalid JSON - leave assets null
   }

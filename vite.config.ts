@@ -8,8 +8,8 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Local dev middleware - mirrors the serverless /api/config endpoint
-// so `bun run dev` works without Vercel.
+// Local dev middleware - mirrors the serverless /api/config and /api/asset
+// endpoints so `bun run dev` works without Vercel.
 function devApiConfig(): Plugin {
   return {
     name: "dev-api-config",
@@ -18,8 +18,30 @@ function devApiConfig(): Plugin {
         res.setHeader("Content-Type", "application/json");
         res.setHeader("Access-Control-Allow-Origin", "*");
         let assets = null;
-        try { assets = JSON.parse(process.env.THREE_D_ASSETS ?? "null"); } catch {}
+        try {
+          const raw = JSON.parse(process.env.THREE_D_ASSETS ?? "null");
+          if (raw && typeof raw === "object") {
+            assets = Object.fromEntries(
+              Object.entries(raw as Record<string, string>).map(([k, v]) => [k, `/api/asset?url=${encodeURIComponent(v)}`])
+            );
+          }
+        } catch {}
         res.end(JSON.stringify({ assets }));
+      });
+      server.middlewares.use("/api/asset", async (req, res) => {
+        res.setHeader("Access-Control-Allow-Origin", "*");
+        const url = new URL(req.url ?? "", "http://localhost").searchParams.get("url");
+        if (!url) { res.statusCode = 400; res.end(JSON.stringify({ error: "Missing url" })); return; }
+        try {
+          const upstream = await fetch(url);
+          if (!upstream.ok) { res.statusCode = upstream.status; res.end(JSON.stringify({ error: "Upstream error" })); return; }
+          res.setHeader("Content-Type", upstream.headers.get("content-type") ?? "application/octet-stream");
+          res.setHeader("Cache-Control", "public, max-age=86400");
+          const buf = Buffer.from(await upstream.arrayBuffer());
+          res.end(buf);
+        } catch (err: any) {
+          res.statusCode = 502; res.end(JSON.stringify({ error: err.message || "Proxy error" }));
+        }
       });
     },
   };
