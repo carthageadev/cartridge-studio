@@ -2,7 +2,20 @@
 
 ## 3D Model
 
-The cartridge model lives at `public/model.glb`. It has two meshes:
+The cartridge model and texture files are loaded from `THREE_D_BASE_URL` at runtime. For example:
+
+```
+THREE_D_BASE_URL=https://archive.org/download/7535476
+```
+
+This loads the following public Internet Archive files:
+
+- `https://archive.org/download/7535476/model.glb`
+- `https://archive.org/download/7535476/diffuse.jpg`
+- `https://archive.org/download/7535476/normal.png`
+- `https://archive.org/download/7535476/roughness.png`
+
+The model has two meshes:
 
 - `model_2` - the plastic shell. Uses `diffuse.jpg` as the base color, plus normal and roughness maps.
 - `boxart` - the label face. Shows per-game sticker art as a texture (`flipY = false`).
