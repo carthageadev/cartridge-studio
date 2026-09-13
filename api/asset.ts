@@ -14,13 +14,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     const upstream = await fetch(url)
-    if (!upstream.ok) return res.status(upstream.status).json({ error: 'Upstream error' })
+    if (!upstream.ok || !upstream.body) return res.status(upstream.status || 502).json({ error: 'Upstream error' })
 
     res.setHeader('Content-Type', upstream.headers.get('content-type') ?? 'application/octet-stream')
     res.setHeader('Cache-Control', 'public, max-age=86400')
 
-    const buffer = Buffer.from(await upstream.arrayBuffer())
-    return res.status(200).send(buffer)
+    const reader = upstream.body.getReader()
+    const pump = async (): Promise<void> => {
+      const { done, value } = await reader.read()
+      if (done) { res.end(); return }
+      res.write(value)
+      return pump()
+    }
+    await pump()
   } catch (err: any) {
     return res.status(502).json({ error: err.message || 'Proxy error' })
   }
