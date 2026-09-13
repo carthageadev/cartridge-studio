@@ -2,7 +2,6 @@ import type { VercelRequest, VercelResponse } from '@vercel/node'
 
 // Server-side config endpoint.
 // Returns 3D asset URLs pointing to files in public/3d/.
-// No env vars needed - assets are bundled with the deploy.
 export default async function handler(_req: VercelRequest, res: VercelResponse) {
   res.setHeader('Access-Control-Allow-Origin', '*')
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS')
