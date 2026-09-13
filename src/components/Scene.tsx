@@ -18,23 +18,16 @@ import { isCoverCacheKey, isCustomCoverKey, loadCoverObjectUrl, releaseCoverObje
 // 3D asset URLs are served at runtime from the serverless config
 // endpoint (/api/config), which reads a server-only env var
 // (THREE_D_BASE_URL). The URL is never baked into the frontend bundle
-// or committed to the repo. Falls back to the old CDN path if the
-// server returns nothing.
-const REPO = "AhmedBenAbdallahDev/cartridge-studio@main"
-const CDN_PREFIX = `https://cdn.jsdelivr.net/gh/${REPO}/3d%20resources`
+// or committed to the repo.
 
 let baseUrlPromise: Promise<string> | null = null
 
 function getAssetBaseUrl(): Promise<string> {
   if (!baseUrlPromise) {
     baseUrlPromise = (async () => {
-      try {
-        const res = await fetch("/api/config")
-        const data = (await res.json()) as { baseUrl?: string }
-        return data.baseUrl?.trim() || CDN_PREFIX
-      } catch {
-        return CDN_PREFIX
-      }
+      const res = await fetch("/api/config")
+      const data = (await res.json()) as { baseUrl?: string }
+      return data.baseUrl?.trim() ?? ""
     })()
   }
   return baseUrlPromise
