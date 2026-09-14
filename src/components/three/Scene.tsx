@@ -17,8 +17,9 @@ function AdaptiveQuality() {
   const setDpr = useThree((s) => s.setDpr)
   return (
     <PerformanceMonitor
+      flipflops={3}
       onDecline={() => setDpr(1)}
-      onIncline={() => setDpr(Math.min(window.devicePixelRatio, 1.4))}
+      onIncline={() => setDpr(Math.min(window.devicePixelRatio, 1.25))}
     />
   )
 }
@@ -31,17 +32,17 @@ function Floor() {
     <mesh rotation-x={-Math.PI / 2} position={[0, FLOOR_Y, 0]}>
       <planeGeometry args={[60, 60]} />
       <MeshReflectorMaterial
-        resolution={256}
-        blur={[140, 45]}
-        mixBlur={0.75}
-        mixStrength={55}
+        resolution={128}
+        blur={[64, 24]}
+        mixBlur={0.6}
+        mixStrength={40}
         roughness={0.85}
         depthScale={1.1}
         minDepthThreshold={0.4}
         maxDepthThreshold={1.3}
         color="#0a0b14"
         metalness={0.55}
-        mirror={0.6}
+        mirror={0.55}
       />
     </mesh>
   )
@@ -89,7 +90,7 @@ function Studio() {
 export function Scene() {
   return (
     <Canvas
-      dpr={[1, 1.4]}
+      dpr={[1, 1.25]}
       camera={{ position: [0, 0.42, 6.3], fov: 38 }}
       gl={{
         antialias: false, // the composer's MSAA handles it
