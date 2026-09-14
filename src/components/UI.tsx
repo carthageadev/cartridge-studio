@@ -57,13 +57,7 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
       {/* -- Top bar -- */}
       <header className="relative z-20 flex items-center justify-between gap-3 px-5 sm:px-8 pt-5 pointer-events-none">
         <div className="flex items-center gap-3 shrink-0 pointer-events-auto">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-red-500 to-orange-500 flex items-center justify-center shadow-lg shadow-red-500/25 ring-1 ring-white/10">
-            <span className="text-white text-sm font-extrabold">64</span>
-          </div>
-          <div className="hidden sm:block">
-            <h1 className="text-white text-base font-bold tracking-wide leading-tight">N64 Flow</h1>
-            <p className="text-white/40 text-[10px] tracking-[0.2em] uppercase font-medium">Cartridge OS</p>
-          </div>
+          <h1 className="font-display text-white text-sm sm:text-base font-bold tracking-[0.35em] uppercase leading-tight">Cartridge Studio</h1>
         </div>
 
         <div className="hidden md:flex flex-1 justify-center min-w-0 pointer-events-auto">
