@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import { useGLTF, useTexture } from '@react-three/drei'
+import { isCoverCacheKey, loadCoverObjectUrl } from '../../utils/coverCache'
 
 // 3D assets are served from this app's own public/3d folder (copied from the
 // main branch): model.glb plus the diffuse, normal and roughness webp maps.
@@ -47,23 +48,36 @@ function useLabelTexture(url: string | null): THREE.Texture {
     if (!url) return
     let alive = true
     let loaded: THREE.Texture | null = null
-    new THREE.TextureLoader().load(
-      url,
-      (t) => {
-        if (!alive) {
-          t.dispose()
-          return
+
+    const load = (src: string) => {
+      new THREE.TextureLoader().load(
+        src,
+        (t) => {
+          if (!alive) {
+            t.dispose()
+            return
+          }
+          configureColorTexture(t)
+          t.anisotropy = 4 // labels are small on screen; keep sampling cheap
+          loaded = t
+          setTex(t)
+        },
+        undefined,
+        () => {
+          /* keep fallback on error */
         }
-        configureColorTexture(t)
-        t.anisotropy = 4 // labels are small on screen; keep sampling cheap
-        loaded = t
-        setTex(t)
-      },
-      undefined,
-      () => {
-        /* keep fallback on error */
-      }
-    )
+      )
+    }
+
+    // Cached covers are stored as blobs; resolve to an object URL first
+    if (isCoverCacheKey(url)) {
+      loadCoverObjectUrl(url).then((objectUrl) => {
+        if (alive && objectUrl) load(objectUrl)
+      })
+    } else {
+      load(url)
+    }
+
     return () => {
       alive = false
       loaded?.dispose()

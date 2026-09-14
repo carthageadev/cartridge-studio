@@ -2,6 +2,7 @@ import { create } from 'zustand'
 import { persist, createJSONStorage } from 'zustand/middleware'
 import type { GameEntry } from './types'
 import { searchGames, fetchGameInfo } from './api/screenscraper'
+import { cacheCoverFromUrl, isCoverCacheKey } from './utils/coverCache'
 import type { SearchResult } from './types'
 
 /** The carousel wraps around once there are enough carts to feel like a ring. */
@@ -212,10 +213,16 @@ export async function resolveLibrary() {
         }
         if (!ssId) throw new Error('No match found')
         const info = await withRetry(() => fetchGameInfo(ssId!))
+        // Download the label once and keep it in IndexedDB
+        let labelUrl = info.labelUrl
+        if (labelUrl) {
+          const cached = await cacheCoverFromUrl(`game-${ssId}`, labelUrl)
+          if (cached) labelUrl = cached
+        }
         useStore.getState().updateGame(next.uid, {
           ssId,
           name: info.meta.title || next.name,
-          labelUrl: info.labelUrl,
+          labelUrl,
           meta: info.meta,
           status: 'ready',
         })
@@ -239,5 +246,18 @@ export function startLibraryResolver() {
       store.updateGame(g.uid, { status: 'pending' })
     }
   }
+  void migrateCovers()
   void resolveLibrary()
+}
+
+/** Cache covers for entries saved before caching existed, so they only
+ *  download once too. */
+async function migrateCovers() {
+  const games = useStore.getState().games
+  for (const g of games) {
+    if (g.status === 'ready' && g.labelUrl && !isCoverCacheKey(g.labelUrl)) {
+      const cached = await cacheCoverFromUrl(`game-${g.ssId || g.uid}`, g.labelUrl)
+      if (cached) useStore.getState().updateGame(g.uid, { labelUrl: cached })
+    }
+  }
 }
