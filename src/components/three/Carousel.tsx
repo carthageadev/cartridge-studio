@@ -115,12 +115,12 @@ function CartridgeRig({
     ty += Math.sin(t * 1.6 + index * 1.7) * floatAmp
     const rotZ = Math.sin(t * 0.9 + index * 2.3) * 0.012
 
-    const speed = 7
+    const speed = 11
     g.position.x = damp(g.position.x, tx, speed, delta)
-    g.position.y = damp(g.position.y, ty, speed * 0.7, delta)
-    g.position.z = damp(g.position.z, tz, speed * 0.8, delta)
-    g.rotation.y = damp(g.rotation.y, trotY, speed * 0.85, delta)
-    g.rotation.z = damp(g.rotation.z, rotZ, 4, delta)
+    g.position.y = damp(g.position.y, ty, speed * 0.85, delta)
+    g.position.z = damp(g.position.z, tz, speed, delta)
+    g.rotation.y = damp(g.rotation.y, trotY, speed * 0.95, delta)
+    g.rotation.z = damp(g.rotation.z, rotZ, 6, delta)
     const s = damp(g.scale.x, tscale, speed, delta)
     g.scale.setScalar(s)
   })
@@ -236,7 +236,7 @@ export function Carousel() {
   }, [gl, flow])
 
   useFrame((state, delta) => {
-    flow.scroll = damp(flow.scroll, flow.target, 6, delta)
+    flow.scroll = damp(flow.scroll, flow.target, 9, delta)
 
     // Subtle camera parallax following the pointer - keeps the scene alive
     const px = state.pointer.x
