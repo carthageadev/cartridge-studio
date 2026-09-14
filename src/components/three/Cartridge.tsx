@@ -15,7 +15,7 @@ function useAssetUrls() {
   }
 }
 
-const FALLBACK_LABEL = `${ASSET_PREFIX}/no-image.webp`
+const FALLBACK_LABEL = '/no-image.webp'
 
 /** Final width of a cartridge in world units after auto-fit. */
 export const CART_WIDTH = 2.1
