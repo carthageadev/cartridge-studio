@@ -42,11 +42,46 @@ function App() {
   const [loading, setLoading] = useState(true)
   const crtOverlay = useStore((s) => s.settings.crtOverlay)
   const showLeva = useStore((s) => s.showLeva)
+  const sceneReady = useStore((s) => s.sceneReady)
+  const triggerIntro = useStore((s) => s.triggerIntro)
+  const getVisibleGames = useStore((s) => s.getVisibleGames)
 
+  // Minimum time the loading screen stays up (let the shimmer breathe)
+  const [minTime, setMinTime] = useState(false)
   useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 2200)
+    const timer = setTimeout(() => setMinTime(true), 2200)
     return () => clearTimeout(timer)
   }, [])
+
+  // Don't reveal until cover art has finished streaming (with a hard cap so a
+  // slow/failing network can never trap the user on the loading screen)
+  const [coversReady, setCoversReady] = useState(false)
+  useEffect(() => {
+    const check = () => {
+      const games = getVisibleGames()
+      setCoversReady(games.every((g) => g.coverState !== "fetching"))
+    }
+    check()
+    const t = setInterval(check, 300)
+    return () => clearInterval(t)
+  }, [getVisibleGames])
+
+  const reveal = () => {
+    setLoading(false)
+    triggerIntro()
+  }
+
+  // Reveal when everything is ready; hard cap at 10s regardless
+  useEffect(() => {
+    if (loading && minTime && coversReady && sceneReady) reveal()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, minTime, coversReady, sceneReady])
+  useEffect(() => {
+    if (!loading) return
+    const cap = setTimeout(reveal, 10000)
+    return () => clearTimeout(cap)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading])
 
   useEffect(() => {
     startLibraryResolver()
@@ -54,10 +89,10 @@ function App() {
 
   return (
     <div className="w-screen h-screen bg-bg overflow-hidden relative">
-      {/* Main content - fully edge-to-edge, no border or frame */}
-      <div
-        className={`absolute inset-0 transition-opacity duration-1000 ${loading ? "opacity-0" : "opacity-100"}`}
-      >
+      {/* Main content - fully edge-to-edge, no border or frame.
+          Always at full opacity; the loading overlay simply covers it,
+          so the reveal is one cheap layer fade instead of a full crossfade. */}
+      <div className="absolute inset-0">
         <AppErrorBoundary>
           <Routes>
             <Route path="/" element={<><Scene /><UI /></>} />
@@ -68,7 +103,7 @@ function App() {
 
       {/* Loading overlay */}
       <div
-        className={`absolute inset-0 z-50 transition-opacity duration-1000 ${loading ? "opacity-100" : "opacity-0 pointer-events-none"}`}
+        className={`absolute inset-0 z-50 bg-[#05050c] transition-opacity duration-1000 ease-out ${loading ? "opacity-100" : "opacity-0 pointer-events-none"}`}
       >
         <LoadingScreen />
       </div>

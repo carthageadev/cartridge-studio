@@ -4,7 +4,7 @@ import { Html, useCursor, useGLTF, useTexture, Environment, Sparkles, ContactSha
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing"
 import * as THREE from "three"
 import { button, folder, useControls } from "leva"
-import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react"
+import { AlertTriangle, CheckCircle2, Heart, Loader2 } from "lucide-react"
 import { LayeredReflectorMaterial } from "./LayeredReflectorMaterial"
 import { type Game } from "../data/games"
 import { startLibraryResolver, useStore } from "../store"
@@ -200,6 +200,7 @@ function Cartridge3D({ game }: { game: Game }) {
   const gltf = useGLTF(model, true)
   const scene = gltf.scene
   const tweaks = useStore((s) => s.sceneTweaks)
+  const setSceneReady = useStore((s) => s.setSceneReady)
 
   const bodyBaseTex = useFlippedTexture(bodyBase)
   const bodyNormalTex = useFlippedDataTexture(bodyNormal)
@@ -226,6 +227,9 @@ function Cartridge3D({ game }: { game: Game }) {
     const bodyMat = getSharedBodyMaterial(bodyBaseTex, bodyNormalTex, bodyRoughnessTex)
     bodyMat.roughness = tweaks.bodyRoughness
     bodyMat.envMapIntensity = tweaks.bodyEnvIntensity
+
+    // Model + body textures + materials are in place - the scene can be revealed
+    setSceneReady(true)
 
     clone.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
@@ -320,6 +324,7 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
   const selectedIndex = useStore((s) => s.selectedIndex)
   const setSelectedIndex = useStore((s) => s.setSelectedIndex)
   const setInspectMode = useStore((s) => s.setInspectMode)
+  const inspectMode = useStore((s) => s.inspectMode)
   const [hovered, setHovered] = useState(false)
   const isSelected = index === selectedIndex
   const isNear = Math.abs(index - selectedIndex) <= CULL_RADIUS
@@ -331,6 +336,24 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
   const dragOffset = useRef({ x: 0, y: 0 })   // current rotation offset from base
   const lastPointer = useRef({ x: 0, y: 0 })
   const introStart = useRef<number | null>(null)
+
+  // Floating favorite heart - fades in on hover over the cartridge corner
+  const favorites = useStore((s) => s.favorites)
+  const toggleFavorite = useStore((s) => s.toggleFavorite)
+  const isFav = favorites.includes(game.id)
+  const introTriggered = useStore((s) => s.introTriggered)
+  const [heartMounted, setHeartMounted] = useState(false)
+  const [heartShown, setHeartShown] = useState(false)
+  useEffect(() => {
+    if (hovered) {
+      setHeartMounted(true)
+      const t = setTimeout(() => setHeartShown(true), 30)
+      return () => clearTimeout(t)
+    }
+    setHeartShown(false)
+    const t = setTimeout(() => setHeartMounted(false), 300)
+    return () => clearTimeout(t)
+  }, [hovered])
 
   const target = useMemo(() => {
     const offset = index - selectedIndex
@@ -383,18 +406,35 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
     }
 
     // Position
-    ref.current.position.x = l(ref.current.position.x, target.x, sp * dt)
-    ref.current.position.z = l(ref.current.position.z, target.z, sp * dt)
+    // In zoom mode the selected cart eases toward the camera and the side
+    // carts recede into the dark - all via the same lerp, so it's smooth.
+    let tx = target.x
+    let tz = target.z
+    let tScale = target.scale
+    if (inspectMode) {
+      if (isSelected) {
+        tz = target.z + 0.35
+        tScale = 1.18
+      } else {
+        tz = target.z - 2.8
+        tScale = target.scale * 0.85
+      }
+    }
+    ref.current.position.x = l(ref.current.position.x, tx, sp * dt)
+    ref.current.position.z = l(ref.current.position.z, tz, sp * dt)
     let ty = target.y
 
-    // Staggered intro rise - each slot starts below the screen and eases up
-    if (introStart.current === null) introStart.current = state.clock.elapsedTime
-    const introT = state.clock.elapsedTime - introStart.current - index * INTRO_STAGGER
-    const intro = introT <= 0 ? 1 : introT >= INTRO_DURATION ? 0 : 1 - easeOutCubic(introT / INTRO_DURATION)
-    ty -= intro * INTRO_DROP
+    // Staggered intro rise - gated on the loading reveal so the wave is visible.
+    // Before the reveal, slots hold below the screen (hidden behind the overlay anyway).
+    if (introStart.current === null && introTriggered) introStart.current = state.clock.elapsedTime
+    if (introStart.current !== null) {
+      const introT = state.clock.elapsedTime - introStart.current - index * INTRO_STAGGER
+      const intro = introT <= 0 ? 1 : introT >= INTRO_DURATION ? 0 : 1 - easeOutCubic(introT / INTRO_DURATION)
+      ty -= intro * INTRO_DROP
+    }
 
     if (isSelected && !isDragging) ty += Math.sin(state.clock.elapsedTime * 1.85) * 0.04
-    if (hovered && !isSelected) ty += 0.18
+    if (hovered && !isSelected && !inspectMode) ty += 0.18
     ref.current.position.y = l(ref.current.position.y, ty, sp * dt)
 
     // Rotation (base from carousel + face rotation + drag offset)
@@ -403,14 +443,14 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
     if (isSelected) {
       targetRotY += dragOffset.current.y
       targetRotX = dragOffset.current.x
-    } else if (hovered) {
+    } else if (hovered && !inspectMode) {
       targetRotY += target.hoverYaw
     }
     ref.current.rotation.y = l(ref.current.rotation.y, targetRotY, (isDragging ? 12 : sp) * dt)
     ref.current.rotation.x = l(ref.current.rotation.x, targetRotX, (isDragging ? 12 : sp) * dt)
 
     // Scale
-    const ts = hovered && !isSelected ? target.scale * 1.06 : target.scale
+    const ts = hovered && !isSelected && !inspectMode ? tScale * 1.06 : tScale
     ref.current.scale.x = l(ref.current.scale.x, ts, sp * dt)
     ref.current.scale.y = l(ref.current.scale.y, ts, sp * dt)
     ref.current.scale.z = l(ref.current.scale.z, ts, sp * dt)
@@ -456,6 +496,18 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
           </div>
         </Html>
       )}
+      {isNear && heartMounted && (
+        <Html center position={[0.52, 0.78, 0.32]} zIndexRange={[12, 0]} distanceFactor={4.5}>
+          <button
+            className={"cart-fav" + (heartShown ? " cart-fav--on" : "") + (isFav ? " cart-fav--active" : "")}
+            onPointerDown={(e) => e.stopPropagation()}
+            onClick={(e) => { e.stopPropagation(); toggleFavorite(game.id) }}
+            title={isFav ? "Remove from favorites" : "Add to favorites"}
+          >
+            <Heart size={14} className={isFav ? "fill-current" : ""} />
+          </button>
+        </Html>
+      )}
     </group>
   )
 }
@@ -468,66 +520,6 @@ function Carousel({ items }: { items: Game[] }) {
 /*  Inspect (Zoom) Scene - ultra close-up examination                  */
 /*  Same drag behaviour, but the camera pulls in significantly.       */
 /* ================================================================== */
-
-function InspectScene({ game }: { game: Game }) {
-  const groupRef = useRef<THREE.Group>(null!)
-  const [isDragging, setIsDragging] = useState(false)
-  const rotation = useRef({ x: 0.12, y: 0 })
-  const lastPointer = useRef({ x: 0, y: 0 })
-  const inspectZoom = useStore((s) => s.inspectZoom)
-  const setInspectZoom = useStore((s) => s.setInspectZoom)
-
-  // Scroll wheel zooms in/out (clamped in the store)
-  useEffect(() => {
-    const onWheel = (e: WheelEvent) => {
-      e.preventDefault()
-      const dir = e.deltaY > 0 ? -1 : 1
-      setInspectZoom(inspectZoom + dir * 0.12)
-    }
-    window.addEventListener("wheel", onWheel, { passive: false })
-    return () => window.removeEventListener("wheel", onWheel)
-  }, [inspectZoom, setInspectZoom])
-
-  useEffect(() => {
-    if (!isDragging) return
-    const onMove = (e: PointerEvent) => {
-      const dx = e.clientX - lastPointer.current.x
-      const dy = e.clientY - lastPointer.current.y
-      lastPointer.current = { x: e.clientX, y: e.clientY }
-      rotation.current.y += dx * 0.009
-      rotation.current.x = Math.max(-0.7, Math.min(0.7, rotation.current.x + dy * 0.006))
-    }
-    const onUp = () => setIsDragging(false)
-    window.addEventListener("pointermove", onMove)
-    window.addEventListener("pointerup", onUp)
-    return () => { window.removeEventListener("pointermove", onMove); window.removeEventListener("pointerup", onUp) }
-  }, [isDragging])
-
-  useFrame((_, delta) => {
-    if (!groupRef.current) return
-    const dt = clampFrameDelta(delta)
-    if (!isDragging) rotation.current.y += dt * 0.18
-    const l = THREE.MathUtils.lerp
-    groupRef.current.rotation.x = l(groupRef.current.rotation.x, rotation.current.x, 10 * dt)
-    groupRef.current.rotation.y = l(groupRef.current.rotation.y, rotation.current.y, 10 * dt)
-  })
-
-  return (
-    <group
-      ref={groupRef}
-      position={[0, 0.35, 0]}
-      onPointerDown={(e) => {
-        e.stopPropagation()
-        setIsDragging(true)
-        lastPointer.current = { x: e.nativeEvent.clientX, y: e.nativeEvent.clientY }
-      }}
-    >
-      <Suspense fallback={null}>
-        <Cartridge3D game={game} />
-      </Suspense>
-    </group>
-  )
-}
 
 /* ================================================================== */
 /*  Floor - subtle reflective                                          */
@@ -590,17 +582,32 @@ function CameraController({ inspectMode }: { inspectMode: boolean }) {
   const { camera } = useThree()
   const cameraZoom = useStore((s) => s.settings.cameraZoom)
   const inspectZoom = useStore((s) => s.inspectZoom)
+  const setInspectZoom = useStore((s) => s.setInspectZoom)
+  // Persistent look target so switching modes glides instead of snapping
+  const look = useRef(new THREE.Vector3(0, 1.3, 0))
+
+  // Scroll wheel zooms in/out while inspecting (clamped in the store)
+  useEffect(() => {
+    if (!inspectMode) return
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      setInspectZoom(inspectZoom + (e.deltaY > 0 ? -0.12 : 0.12))
+    }
+    window.addEventListener("wheel", onWheel, { passive: false })
+    return () => window.removeEventListener("wheel", onWheel)
+  }, [inspectMode, inspectZoom, setInspectZoom])
 
   useFrame((_, delta) => {
     const dt = clampFrameDelta(delta)
     const browseZ = cameraZoom        // user-tunable browse distance
     const browseY = 2.5 + (cameraZoom - 9) * 0.12
     const targetPos = inspectMode
-      ? new THREE.Vector3(0, 1.75, 7.2 / inspectZoom)
+      ? new THREE.Vector3(0, 1.8, 9.2 / inspectZoom)
       : new THREE.Vector3(0, browseY, browseZ)
     camera.position.lerp(targetPos, 2.5 * dt)
-    const targetLook = inspectMode ? new THREE.Vector3(0, 1.6, 0) : new THREE.Vector3(0, 1.3, 0)
-    camera.lookAt(targetLook)
+    const targetLook = inspectMode ? new THREE.Vector3(0, 1.7, 0) : new THREE.Vector3(0, 1.3, 0)
+    look.current.lerp(targetLook, 2.5 * dt)
+    camera.lookAt(look.current)
   })
   return null
 }
@@ -835,8 +842,6 @@ function SceneContent() {
 
   useEffect(() => { setVisibleCount(visibleGames.length) }, [setVisibleCount, visibleGames.length])
 
-  const selectedGame = visibleGames[useStore((s) => s.selectedIndex)] ?? visibleGames[0]
-
   return (
     <>
       <SceneLevaControls key={levaPanelVersion} />
@@ -854,12 +859,9 @@ function SceneContent() {
       <Floor />
       <Particles />
 
-      {/* Carousel stays mounted (just hidden) during inspect - remounting
-          ~20 clones was causing the hitch when entering/exiting inspect. */}
-      <group visible={!inspectMode}>
-        <Carousel items={visibleGames} />
-      </group>
-      {inspectMode && <InspectScene game={selectedGame} />}
+      {/* Inspect mode animates the carousel itself - no component swap,
+          so nothing pops and everything moves smoothly. */}
+      <Carousel items={visibleGames} />
 
       <EffectComposer multisampling={8}>
         <Bloom

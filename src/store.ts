@@ -108,6 +108,12 @@ interface Store {
   setInspectMode: (value: boolean) => void
   inspectZoom: number
   setInspectZoom: (value: number) => void
+  /** True once the 3D model + body textures are loaded and materials assigned. */
+  sceneReady: boolean
+  setSceneReady: (value: boolean) => void
+  /** True when the loading screen starts fading - gates the staggered intro so it's visible. */
+  introTriggered: boolean
+  triggerIntro: () => void
   settings: {
     ambienceVolume: number
     sfxVolume: number
@@ -476,6 +482,10 @@ export const useStore = create<Store>()(
       setInspectMode: (value: boolean) => set(value ? { inspectMode: true } : { inspectMode: false, inspectZoom: 1 }),
       inspectZoom: 1,
       setInspectZoom: (value: number) => set({ inspectZoom: Math.max(0.7, Math.min(1.8, value)) }),
+      sceneReady: false,
+      setSceneReady: (value: boolean) => set({ sceneReady: value }),
+      introTriggered: false,
+      triggerIntro: () => set({ introTriggered: true }),
       settings: defaultSettings,
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
       resetSettings: () => set({ settings: defaultSettings }),

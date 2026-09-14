@@ -3,7 +3,7 @@ import { useStore, PRESETS, clearLibraryCoverCache, refreshLibraryCovers } from 
 import { clearCredentials } from "../api/screenscraper"
 import { saveCoverFile } from "../utils/coverCache"
 import {
-  Search, Heart, Library, Info, X, Settings, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2, Upload
+  Search, Heart, Library, X, Settings, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2, Upload
 } from "lucide-react"
 import { Button, Badge, Dialog, DialogContent, DialogTitle, DialogDescription, Tabs, TabsList, TabsTrigger, Slider, Switch } from "./primitives"
 import { cn } from "../utils/cn"
@@ -16,21 +16,6 @@ const SORT_MODES = [
   { key: "alpha", label: "A-Z" },
 ] as const
 const NO_IMAGE_COVER = "/no-image.webp"
-
-/* -- Star rating -- */
-function Stars({ rating, color }: { rating: number; color: string }) {
-  const filled = Math.round(rating / 2)
-  return (
-    <div className="flex items-center gap-0.5">
-      {[...Array(5)].map((_, i) => (
-        <svg key={i} width="13" height="13" viewBox="0 0 24 24" fill={i < filled ? color : "none"} stroke={color} strokeWidth="2">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z" />
-        </svg>
-      ))}
-      <span className="text-white/40 text-[11px] ml-1.5 font-medium">{rating.toFixed(1)}</span>
-    </div>
-  )
-}
 
 /* -- Top status bar + settings -- */
 function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () => void; inspectMode: boolean; setInspectMode: (v: boolean) => void }) {
@@ -317,8 +302,6 @@ export function UI() {
   const next = useStore((s) => s.next)
   const prev = useStore((s) => s.prev)
   const setSelectedIndex = useStore((s) => s.setSelectedIndex)
-  const favorites = useStore((s) => s.favorites)
-  const toggleFavorite = useStore((s) => s.toggleFavorite)
   const inspectMode = useStore((s) => s.inspectMode)
   const setInspectMode = useStore((s) => s.setInspectMode)
   const toggleLeva = useStore((s) => s.toggleLeva)
@@ -403,12 +386,6 @@ export function UI() {
             <p className="text-white/55 text-xs sm:text-sm leading-relaxed max-w-xl mx-auto line-clamp-2">{game.description}</p>
             <div className="flex items-center justify-center gap-3 mt-3">
               <span className="text-white/40 text-xs font-medium">{game.developer}</span>
-              <span className="w-px h-3 bg-white/10" />
-              <Stars rating={game.rating} color={game.color} />
-            </div>
-            <div className="mt-4 flex items-center justify-center gap-2 pointer-events-auto">
-              <Button variant="outline" onClick={() => toggleFavorite(game.id)} className={cn("text-xs rounded-xl", favorites.includes(game.id) && "border-pink-500/40 text-pink-300 bg-pink-500/10")}><Heart className={cn("w-4 h-4", favorites.includes(game.id) && "fill-current")} />{favorites.includes(game.id) ? "Favorited" : "Favorite"}</Button>
-              <Button variant="ghost" onClick={() => setInspectMode(!inspectMode)} className="text-xs rounded-xl"><Info className="w-4 h-4" />{inspectMode ? "Exit Zoom" : "Zoom In"}</Button>
             </div>
           </div>
         </div>

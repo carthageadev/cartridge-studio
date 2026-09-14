@@ -142,6 +142,39 @@
     background: currentColor;
     opacity: 0.8;
   }
+
+  /* Floating favorite heart - circular, blurred, fades in on hover */
+  .cart-fav {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 999px;
+    color: rgba(255, 255, 255, 0.75);
+    background: rgba(8, 10, 18, 0.45);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.14);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+    cursor: pointer;
+    opacity: 0;
+    transform: scale(0.85);
+    transition: opacity 0.28s ease, transform 0.28s ease, color 0.28s ease;
+  }
+  .cart-fav--on {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .cart-fav:hover {
+    color: #fff;
+  }
+  .cart-fav--active {
+    color: #f472b6;
+  }
+  .cart-fav--active:hover {
+    color: #f9a8d4;
+  }
   .spin {
     animation: spin 1s linear infinite;
   }
