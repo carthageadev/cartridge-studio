@@ -1,42 +1,21 @@
-import { useEffect, useMemo, useRef, useState, use } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import * as THREE from 'three'
 import { useGLTF, useTexture } from '@react-three/drei'
 
-// 3D asset URLs are served at runtime from the serverless config
-// endpoint (/api/config), which reads a server-only env var
-// (THREE_D_BASE_URL). The URL is never baked into the frontend bundle
-// or committed to the repo. Falls back to local /public paths if the
-// server returns nothing.
-let baseUrlPromise: Promise<string> | null = null
+// 3D assets are served from this app's own public/3d folder (copied from the
+// main branch): model.glb plus the diffuse, normal and roughness webp maps.
+const ASSET_PREFIX = '/3d'
 
-function getAssetBaseUrl(): Promise<string> {
-  if (!baseUrlPromise) {
-    baseUrlPromise = (async () => {
-      try {
-        const res = await fetch('/api/config')
-        const data = (await res.json()) as { baseUrl?: string }
-        return data.baseUrl?.trim() || ''
-      } catch {
-        return ''
-      }
-    })()
-  }
-  return baseUrlPromise
-}
-
-// Suspends until the base URL is resolved, then builds the asset URLs.
 function useAssetUrls() {
-  const baseUrl = use(getAssetBaseUrl())
-  const prefix = baseUrl || ''
   return {
-    model: `${prefix}/model.glb`,
-    bodyBase: `${prefix}/diffuse.jpg`,
-    bodyNormal: `${prefix}/normal.png`,
-    bodyRoughness: `${prefix}/roughness.png`,
+    model: `${ASSET_PREFIX}/model.glb`,
+    bodyBase: `${ASSET_PREFIX}/diffuse.webp`,
+    bodyNormal: `${ASSET_PREFIX}/normal.webp`,
+    bodyRoughness: `${ASSET_PREFIX}/roughness.webp`,
   }
 }
 
-const FALLBACK_LABEL = '/gameart.png'
+const FALLBACK_LABEL = `${ASSET_PREFIX}/no-image.webp`
 
 /** Final width of a cartridge in world units after auto-fit. */
 export const CART_WIDTH = 2.1
@@ -172,12 +151,9 @@ export function CartridgeModel({ labelUrl }: CartridgeModelProps) {
   )
 }
 
-// Preload the model and textures once the base URL is resolved.
-getAssetBaseUrl().then((baseUrl) => {
-  const prefix = baseUrl || ''
-  useGLTF.preload(`${prefix}/model.glb`)
-  useTexture.preload(FALLBACK_LABEL)
-  useTexture.preload(`${prefix}/diffuse.jpg`)
-  useTexture.preload(`${prefix}/normal.png`)
-  useTexture.preload(`${prefix}/roughness.png`)
-})
+// Preload the model and textures.
+useGLTF.preload(`${ASSET_PREFIX}/model.glb`)
+useTexture.preload(FALLBACK_LABEL)
+useTexture.preload(`${ASSET_PREFIX}/diffuse.webp`)
+useTexture.preload(`${ASSET_PREFIX}/normal.webp`)
+useTexture.preload(`${ASSET_PREFIX}/roughness.webp`)
