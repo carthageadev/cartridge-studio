@@ -1,7 +1,7 @@
 import { useEffect, useState, useCallback } from "react"
 import { useStore, PRESETS, clearLibraryCoverCache, refreshLibraryCovers } from "../store"
 import { clearCredentials } from "../api/screenscraper"
-import { saveCoverFile } from "../utils/coverCache"
+import { saveCoverFile, isCoverCacheKey, loadCoverObjectUrl } from "../utils/coverCache"
 import {
   Search, Heart, Library, X, Settings, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2, Upload
 } from "lucide-react"
@@ -16,6 +16,39 @@ const SORT_MODES = [
   { key: "alpha", label: "A-Z" },
 ] as const
 const NO_IMAGE_COVER = "/no-image.webp"
+
+/* -- Library cover thumb - resolves cache keys exactly like the 3D cartridge,
+      so the grid shows the same image. No release: the scene may share the URL. -- */
+function useResolvedCoverUrl(coverArt: string | undefined): string {
+  const [url, setUrl] = useState(NO_IMAGE_COVER)
+  useEffect(() => {
+    let cancelled = false
+    if (!coverArt || coverArt === "/no-image.svg") {
+      setUrl(NO_IMAGE_COVER)
+      return
+    }
+    if (isCoverCacheKey(coverArt)) {
+      loadCoverObjectUrl(coverArt).then((objectUrl) => {
+        if (!cancelled) setUrl(objectUrl ?? NO_IMAGE_COVER)
+      })
+      return () => { cancelled = true }
+    }
+    setUrl(coverArt)
+  }, [coverArt])
+  return url
+}
+
+function CoverImg({ game }: { game: any }) {
+  const src = useResolvedCoverUrl(game.coverArt)
+  return (
+    <img
+      src={src}
+      alt={game.title}
+      className="w-full h-full object-cover"
+      onError={(e) => { if (!e.currentTarget.src.endsWith("no-image.webp")) e.currentTarget.src = NO_IMAGE_COVER }}
+    />
+  )
+}
 
 /* -- Top status bar + settings -- */
 function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () => void; inspectMode: boolean; setInspectMode: (v: boolean) => void }) {
@@ -265,7 +298,7 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
               return (
                 <div key={game.id} onClick={() => { setSelectedIndex(i); onClose() }} className={cn("group relative rounded-2xl border overflow-hidden cursor-pointer transition-all", isSelected ? "border-indigo-400/50 ring-2 ring-indigo-500/30 shadow-xl shadow-indigo-500/10" : "border-white/[0.06] hover:border-white/20")}>
                   <div className="relative aspect-[3/4] bg-black/40">
-                    <img src={game.coverArt} alt={game.title} className="w-full h-full object-cover" />
+                    <CoverImg game={game} />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
                     {/* Quick actions */}
