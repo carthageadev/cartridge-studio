@@ -4,8 +4,8 @@
 
 The cartridge model lives at `public/model.glb`. It has two meshes:
 
-- `model_2` - the plastic shell. Uses `diffuse.jpg` as the base color, plus normal and roughness maps.
-- `boxart` - the label face. Shows per-game sticker art as a texture (`flipY = false`).
+- `model_2`: the plastic shell. Uses `diffuse.jpg` as the base color, plus normal and roughness maps.
+- `boxart`: the label face. Shows per-game sticker art as a texture (`flipY = false`).
 
 ### Texture maps
 
