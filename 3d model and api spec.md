@@ -2,23 +2,19 @@
 
 ## 3D Model
 
-The cartridge model and texture files are loaded from `THREE_D_BASE_URL` at runtime. For example:
+The cartridge model and its texture maps live in this repo under `public/3d/`:
 
-```
-THREE_D_BASE_URL=https://archive.org/download/7535476
-```
+- `public/3d/model.glb`
+- `public/3d/diffuse.webp`
+- `public/3d/normal.webp`
+- `public/3d/roughness.webp`
 
-This loads the following public Internet Archive files:
-
-- `https://archive.org/download/7535476/model.glb`
-- `https://archive.org/download/7535476/diffuse.webp`
-- `https://archive.org/download/7535476/normal.webp`
-- `https://archive.org/download/7535476/roughness.webp`
+The frontend asks the serverless config endpoint `/api/config` for the asset URLs, and it returns these local paths.
 
 The model has two meshes:
 
-- `model_2` - the plastic shell. Uses `diffuse.webp` as the base color, plus normal and roughness maps.
-- `boxart` - the label face. Shows per-game sticker art as a texture (`flipY = false`).
+- `model_2`: the plastic shell. Uses `diffuse.webp` as the base color, plus normal and roughness maps.
+- `boxart`: the label face. Shows per-game sticker art as a texture (`flipY = false`).
 
 ### Texture maps
 

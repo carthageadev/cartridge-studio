@@ -15,9 +15,9 @@ import { isCoverCacheKey, isCustomCoverKey, loadCoverObjectUrl, releaseCoverObje
 /* ================================================================== */
 
 // 3D asset URLs are served at runtime from the serverless config
-// endpoint (/api/config), which reads a server-only env var
-// (THREE_D_BASE_URL). Filenames are resolved server-side so no asset
-// paths are baked into the frontend bundle.
+// endpoint (/api/config), which returns the files shipped in public/3d/.
+// Filenames are resolved server-side so no asset paths are baked into
+// the frontend bundle.
 
 interface AssetUrls {
   model: string
