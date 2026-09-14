@@ -79,7 +79,6 @@ export function TopBar() {
     <header className="topbar">
       <div className="topbar-left">
         <span className="logo-chip">64</span>
-        <span className="logo-text">RETROFLOW</span>
         <span className="topbar-divider" />
         <span className="topbar-time">
           {time}
