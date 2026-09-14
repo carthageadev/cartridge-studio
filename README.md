@@ -1,6 +1,5 @@
-# Legacy - Preserved Concept Snapshot
 
-This branch preserves the original RetroFlow 3D concept: a handheld-shell-style N64 library browser with ScreenScraper integration. It is **not** the active development line - use `main` for the current production app.
+This branch preserves the original RetroFlow 3D concept: a handheld-shell-style N64 library browser with ScreenScraper integration. It is **not** the active development line use `main` for the current production app.
 
 ## Goal
 
