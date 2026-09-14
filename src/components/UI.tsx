@@ -3,8 +3,7 @@ import { useStore, PRESETS, clearLibraryCoverCache, refreshLibraryCovers } from 
 import { clearCredentials } from "../api/screenscraper"
 import { saveCoverFile } from "../utils/coverCache"
 import {
-  Search, Heart, Library, Info, X, BatteryMedium, BatteryLow, BatteryFull,
-  Wifi, Settings, Clock, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2, Upload
+  Search, Heart, Library, Info, X, Settings, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2, Upload
 } from "lucide-react"
 import { Button, Badge, Dialog, DialogContent, DialogTitle, DialogDescription, Tabs, TabsList, TabsTrigger, Slider, Switch } from "./primitives"
 import { cn } from "../utils/cn"
@@ -33,17 +32,8 @@ function Stars({ rating, color }: { rating: number; color: string }) {
   )
 }
 
-/* -- Battery icon -- */
-function BatteryIcon({ level }: { level: number }) {
-  if (level > 70) return <BatteryFull className="w-4 h-4 text-emerald-400" />
-  if (level > 30) return <BatteryMedium className="w-4 h-4 text-yellow-400" />
-  return <BatteryLow className="w-4 h-4 text-red-400" />
-}
-
 /* -- Top status bar + settings -- */
 function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () => void; inspectMode: boolean; setInspectMode: (v: boolean) => void }) {
-  const [time, setTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
-  const [battery] = useState(84)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
@@ -56,11 +46,6 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
   const applyPreset = useStore((s) => s.applyPreset)
   const sceneTweaks = useStore((s) => s.sceneTweaks)
   const updateSceneTweaks = useStore((s) => s.updateSceneTweaks)
-
-  useEffect(() => {
-    const t = setInterval(() => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })), 1000)
-    return () => clearInterval(t)
-  }, [])
 
   const clearCoverCache = () => {
     clearCredentials()
@@ -99,13 +84,7 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
           <Button variant="outline" onClick={onLibrary} className="rounded-xl px-2.5 sm:px-3 py-2 text-xs"><Library className="w-4 h-4" /><span className="hidden md:inline">Library</span></Button>
           <Button variant={inspectMode ? "primary" : "outline"} onClick={() => setInspectMode(!inspectMode)} className="rounded-xl px-2.5 sm:px-3 py-2 text-xs"><ZoomIn className="w-4 h-4" /><span className="hidden md:inline">{inspectMode ? "Exit Zoom" : "Zoom"}</span></Button>
 
-          <div className="flex items-center gap-2.5 glass rounded-2xl px-3 py-1.5 ml-1">
-            <Wifi className="w-4 h-4 text-white/60 hidden sm:block" />
-            <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium"><BatteryIcon level={battery} /><span className="hidden sm:inline">{battery}%</span></div>
-            <div className="w-px h-4 bg-white/10 hidden sm:block" />
-            <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium"><Clock className="w-3.5 h-3.5" /><span className="tabular-nums">{time}</span></div>
-            <button onClick={() => setSettingsOpen(true)} className="ml-0.5 p-1.5 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors" aria-label="Settings"><Settings className="w-4 h-4" /></button>
-          </div>
+          <button onClick={() => setSettingsOpen(true)} className="p-2 rounded-xl glass text-white/60 hover:text-white hover:bg-white/10 transition-colors ml-1" aria-label="Settings"><Settings className="w-4 h-4" /></button>
         </div>
       </header>
 
@@ -411,37 +390,24 @@ export function UI() {
         {inspectMode && <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-none"><Badge className="bg-white/10 text-white/60 border-white/10 tracking-wider">ZOOM MODE · DRAG TO ROTATE</Badge></div>}
       </div>
 
-      {/* Bottom info - ultra clean, no heavy gradient, the beautiful 3D cartridges are the star */}
+      {/* Bottom info - centered, minimal, the cartridges are the star */}
       <div className={cn("relative transition-all duration-500 ease-out", infoVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0")}>
-        <div className="px-5 sm:px-8 pt-1 pb-3">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex justify-center flex-wrap gap-1.5 mb-3 pointer-events-auto">
+        <div className="px-5 sm:px-8 pt-1 pb-4 text-center">
+          <div className="max-w-3xl mx-auto">
+            <div className="flex justify-center flex-wrap gap-1.5 mb-4 pointer-events-auto">
               {visibleGames.map((_: any, i: number) => <button key={i} onClick={() => setSelectedIndex(i)} className={cn("h-1.5 rounded-full transition-all duration-500", i === selectedIndex ? "bg-white w-7 shadow-lg shadow-white/20" : "bg-white/15 w-1.5 hover:bg-white/30")} />)}
             </div>
 
-            <div className="flex items-end gap-5 sm:gap-10">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <Badge color={game.color}>{game.genre}</Badge>
-                  <span className="text-white/40 text-xs">{game.year}</span>
-                  <span className="text-white/20">·</span>
-                  <span className="text-white/40 text-xs">{game.players}</span>
-                </div>
-                <h2 className="text-white text-2xl sm:text-4xl font-extrabold mb-1 tracking-tight leading-tight truncate" style={{ textShadow: `0 0 55px rgba(180,190,255,0.15), 0 2px 14px rgba(0,0,0,0.35)` }}>{game.title}</h2>
-                <p className="text-white/55 text-xs sm:text-sm leading-relaxed max-w-xl line-clamp-2">{game.description}</p>
-                <div className="flex items-center gap-3 mt-2">
-                  <span className="text-white/35 text-xs font-medium">{game.developer}</span>
-                  <span className="w-px h-3 bg-white/10" />
-                  <Stars rating={game.rating} color={game.color} />
-                </div>
-                <div className="mt-3 flex items-center gap-2 pointer-events-auto">
-                  <Button variant="outline" onClick={() => toggleFavorite(game.id)} className={cn("text-xs rounded-xl", favorites.includes(game.id) && "border-pink-500/40 text-pink-300 bg-pink-500/10")}><Heart className={cn("w-4 h-4", favorites.includes(game.id) && "fill-current")} />{favorites.includes(game.id) ? "Favorited" : "Favorite"}</Button>
-                  <Button variant="ghost" onClick={() => setInspectMode(!inspectMode)} className="text-xs rounded-xl"><Info className="w-4 h-4" />{inspectMode ? "Exit Zoom" : "Zoom In"}</Button>
-                </div>
-              </div>
-              <div className="hidden sm:block text-right shrink-0">
-                <div className="text-[60px] font-black leading-none tracking-tighter" style={{ color: `${game.color}08` }}>{String(selectedIndex + 1).padStart(2, "0")}</div>
-              </div>
+            <h2 className="text-white text-2xl sm:text-4xl font-extrabold mb-2 tracking-tight leading-tight" style={{ textShadow: `0 0 55px rgba(180,190,255,0.15), 0 2px 14px rgba(0,0,0,0.35)` }}>{game.title}</h2>
+            <p className="text-white/55 text-xs sm:text-sm leading-relaxed max-w-xl mx-auto line-clamp-2">{game.description}</p>
+            <div className="flex items-center justify-center gap-3 mt-3">
+              <span className="text-white/40 text-xs font-medium">{game.developer}</span>
+              <span className="w-px h-3 bg-white/10" />
+              <Stars rating={game.rating} color={game.color} />
+            </div>
+            <div className="mt-4 flex items-center justify-center gap-2 pointer-events-auto">
+              <Button variant="outline" onClick={() => toggleFavorite(game.id)} className={cn("text-xs rounded-xl", favorites.includes(game.id) && "border-pink-500/40 text-pink-300 bg-pink-500/10")}><Heart className={cn("w-4 h-4", favorites.includes(game.id) && "fill-current")} />{favorites.includes(game.id) ? "Favorited" : "Favorite"}</Button>
+              <Button variant="ghost" onClick={() => setInspectMode(!inspectMode)} className="text-xs rounded-xl"><Info className="w-4 h-4" />{inspectMode ? "Exit Zoom" : "Zoom In"}</Button>
             </div>
           </div>
         </div>
