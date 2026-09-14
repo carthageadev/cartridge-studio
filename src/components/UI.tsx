@@ -15,7 +15,7 @@ const SORT_MODES = [
   { key: "year", label: "Newest" },
   { key: "alpha", label: "A-Z" },
 ] as const
-const NO_IMAGE_COVER = "/no-image.svg"
+const NO_IMAGE_COVER = "/no-image.webp"
 
 /* -- Star rating -- */
 function Stars({ rating, color }: { rating: number; color: string }) {
@@ -343,10 +343,17 @@ export function UI() {
 
   useEffect(() => {
     let lastTime = 0
-    const h = (e: WheelEvent) => { const n = Date.now(); if (n - lastTime < 280) return; lastTime = n; if (e.deltaY > 30) next(); else if (e.deltaY < -30) prev() }
+    const h = (e: WheelEvent) => {
+      if (inspectMode) return // wheel zooms the cartridge in inspect mode instead
+      const n = Date.now()
+      if (n - lastTime < 280) return
+      lastTime = n
+      if (e.deltaY > 30) next()
+      else if (e.deltaY < -30) prev()
+    }
     window.addEventListener("wheel", h, { passive: true })
     return () => window.removeEventListener("wheel", h)
-  }, [next, prev])
+  }, [next, prev, inspectMode])
 
   if (!game) {
     return (

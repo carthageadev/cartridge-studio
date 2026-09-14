@@ -52,6 +52,11 @@ const CARTRIDGE_FACE_ROTATION = Math.PI / 2
 const CAROUSEL_GAP = 4.15
 /* Slots farther than this from the selected one are fully culled (offscreen anyway). */
 const CULL_RADIUS = 6
+/* Startup intro: each slot rises from below, staggered one after another. */
+const INTRO_DURATION = 0.9
+const INTRO_STAGGER = 0.07
+const INTRO_DROP = 3.2
+const easeOutCubic = (x: number) => 1 - Math.pow(1 - x, 3)
 const CAROUSEL_DEPTH_STEP = 0.52
 const REFLECTION_LAYER = 1
 
@@ -325,6 +330,7 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
   const [isDragging, setIsDragging] = useState(false)
   const dragOffset = useRef({ x: 0, y: 0 })   // current rotation offset from base
   const lastPointer = useRef({ x: 0, y: 0 })
+  const introStart = useRef<number | null>(null)
 
   const target = useMemo(() => {
     const offset = index - selectedIndex
@@ -380,6 +386,13 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
     ref.current.position.x = l(ref.current.position.x, target.x, sp * dt)
     ref.current.position.z = l(ref.current.position.z, target.z, sp * dt)
     let ty = target.y
+
+    // Staggered intro rise - each slot starts below the screen and eases up
+    if (introStart.current === null) introStart.current = state.clock.elapsedTime
+    const introT = state.clock.elapsedTime - introStart.current - index * INTRO_STAGGER
+    const intro = introT <= 0 ? 1 : introT >= INTRO_DURATION ? 0 : 1 - easeOutCubic(introT / INTRO_DURATION)
+    ty -= intro * INTRO_DROP
+
     if (isSelected && !isDragging) ty += Math.sin(state.clock.elapsedTime * 1.85) * 0.04
     if (hovered && !isSelected) ty += 0.18
     ref.current.position.y = l(ref.current.position.y, ty, sp * dt)
@@ -461,6 +474,19 @@ function InspectScene({ game }: { game: Game }) {
   const [isDragging, setIsDragging] = useState(false)
   const rotation = useRef({ x: 0.12, y: 0 })
   const lastPointer = useRef({ x: 0, y: 0 })
+  const inspectZoom = useStore((s) => s.inspectZoom)
+  const setInspectZoom = useStore((s) => s.setInspectZoom)
+
+  // Scroll wheel zooms in/out (clamped in the store)
+  useEffect(() => {
+    const onWheel = (e: WheelEvent) => {
+      e.preventDefault()
+      const dir = e.deltaY > 0 ? -1 : 1
+      setInspectZoom(inspectZoom + dir * 0.12)
+    }
+    window.addEventListener("wheel", onWheel, { passive: false })
+    return () => window.removeEventListener("wheel", onWheel)
+  }, [inspectZoom, setInspectZoom])
 
   useEffect(() => {
     if (!isDragging) return
@@ -563,16 +589,17 @@ function Particles() {
 function CameraController({ inspectMode }: { inspectMode: boolean }) {
   const { camera } = useThree()
   const cameraZoom = useStore((s) => s.settings.cameraZoom)
+  const inspectZoom = useStore((s) => s.inspectZoom)
 
   useFrame((_, delta) => {
     const dt = clampFrameDelta(delta)
     const browseZ = cameraZoom        // user-tunable browse distance
     const browseY = 2.5 + (cameraZoom - 9) * 0.12
     const targetPos = inspectMode
-      ? new THREE.Vector3(0, 0.5, 5.2)
+      ? new THREE.Vector3(0, 1.75, 7.2 / inspectZoom)
       : new THREE.Vector3(0, browseY, browseZ)
     camera.position.lerp(targetPos, 2.5 * dt)
-    const targetLook = inspectMode ? new THREE.Vector3(0, 0.35, 0) : new THREE.Vector3(0, 1.3, 0)
+    const targetLook = inspectMode ? new THREE.Vector3(0, 1.6, 0) : new THREE.Vector3(0, 1.3, 0)
     camera.lookAt(targetLook)
   })
   return null
@@ -827,7 +854,12 @@ function SceneContent() {
       <Floor />
       <Particles />
 
-      {inspectMode ? <InspectScene game={selectedGame} /> : <Carousel items={visibleGames} />}
+      {/* Carousel stays mounted (just hidden) during inspect - remounting
+          ~20 clones was causing the hitch when entering/exiting inspect. */}
+      <group visible={!inspectMode}>
+        <Carousel items={visibleGames} />
+      </group>
+      {inspectMode && <InspectScene game={selectedGame} />}
 
       <EffectComposer multisampling={8}>
         <Bloom

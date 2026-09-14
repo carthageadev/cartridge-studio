@@ -106,6 +106,8 @@ interface Store {
   setSearchQuery: (q: string) => void
   inspectMode: boolean
   setInspectMode: (value: boolean) => void
+  inspectZoom: number
+  setInspectZoom: (value: number) => void
   settings: {
     ambienceVolume: number
     sfxVolume: number
@@ -471,7 +473,9 @@ export const useStore = create<Store>()(
       searchQuery: "",
       setSearchQuery: (q: string) => set({ searchQuery: q.trimStart() }),
       inspectMode: false,
-      setInspectMode: (value: boolean) => set({ inspectMode: value }),
+      setInspectMode: (value: boolean) => set(value ? { inspectMode: true } : { inspectMode: false, inspectZoom: 1 }),
+      inspectZoom: 1,
+      setInspectZoom: (value: number) => set({ inspectZoom: Math.max(0.7, Math.min(1.8, value)) }),
       settings: defaultSettings,
       updateSettings: (patch) => set((s) => ({ settings: { ...s.settings, ...patch } })),
       resetSettings: () => set({ settings: defaultSettings }),
