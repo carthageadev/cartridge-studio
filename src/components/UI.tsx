@@ -414,18 +414,9 @@ export function UI() {
 
 /* -- Loading screen -- */
 export function LoadingScreen() {
-  const [dots, setDots] = useState("")
-  useEffect(() => { const id = setInterval(() => setDots((d) => (d.length >= 3 ? "" : d + ".")), 400); return () => clearInterval(id) }, [])
   return (
-    <div className="absolute inset-0 bg-[#08081a] flex flex-col items-center justify-center z-50">
-      <div className="relative w-20 h-20 mb-8">
-        <div className="absolute inset-0 rounded-full border-2 border-indigo-500/20 border-t-indigo-400 animate-spin" />
-        <div className="absolute inset-2 rounded-full border-2 border-purple-500/20 border-b-purple-400" style={{ animation: "spin 1.2s linear infinite reverse" }} />
-        <div className="absolute inset-4 rounded-full border-2 border-pink-500/20 border-l-pink-400 animate-spin" />
-        <div className="absolute inset-0 flex items-center justify-center"><div className="w-3 h-3 rounded-full bg-indigo-400/60 animate-pulse" /></div>
-      </div>
-      <p className="text-white/50 text-sm tracking-[0.3em] uppercase font-medium">Loading{dots}</p>
-      <p className="text-white/20 text-xs mt-2 tracking-wider">Preparing your collection</p>
+    <div className="absolute inset-0 bg-[#05050c] flex items-center justify-center z-50">
+      <span className="shimmer-text text-sm font-semibold tracking-[0.45em] uppercase select-none">Loading</span>
     </div>
   )
 }

@@ -168,6 +168,22 @@
 }
 
 /* ================================================================== */
+/*  Shimmer loading text                                               */
+/* ================================================================== */
+.shimmer-text {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.18) 0%, rgba(255, 255, 255, 0.18) 38%, #ffffff 50%, rgba(255, 255, 255, 0.18) 62%, rgba(255, 255, 255, 0.18) 100%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer-sweep 2.2s linear infinite;
+}
+@keyframes shimmer-sweep {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+/* ================================================================== */
 /*  Leva debug panel - labels visible, number inputs only (no sliders) */
 /* ================================================================== */
 #leva__root > div {
