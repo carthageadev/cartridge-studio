@@ -50,6 +50,8 @@ const TARGET_HEIGHT = 2.8
 const LERP_SPEED = 5
 const CARTRIDGE_FACE_ROTATION = Math.PI / 2
 const CAROUSEL_GAP = 4.15
+/* Slots farther than this from the selected one are fully culled (offscreen anyway). */
+const CULL_RADIUS = 6
 const CAROUSEL_DEPTH_STEP = 0.52
 const REFLECTION_LAYER = 1
 
@@ -166,6 +168,28 @@ function useCoverTexture(game: Game): THREE.Texture {
 /*    - envMapIntensity 0.45 so the env adds subtle realism, not glare*/
 /* ================================================================== */
 
+/* One body material shared by every cartridge - same model, same textures.
+   Only the boxart material is unique per game (different cover art).
+   Cuts ~N material instances and avoids re-creating them on every tweak. */
+let sharedBodyMaterial: THREE.MeshStandardMaterial | null = null
+function getSharedBodyMaterial(
+  baseTex: THREE.Texture,
+  normalTex: THREE.Texture,
+  roughTex: THREE.Texture
+): THREE.MeshStandardMaterial {
+  if (!sharedBodyMaterial) {
+    sharedBodyMaterial = new THREE.MeshStandardMaterial({
+      map: baseTex,
+      normalMap: normalTex,
+      normalScale: new THREE.Vector2(1.0, 1.0),
+      roughnessMap: roughTex,
+      metalness: 0.0,
+      color: new THREE.Color(0xffffff),
+    })
+  }
+  return sharedBodyMaterial
+}
+
 function Cartridge3D({ game }: { game: Game }) {
   const { model, bodyBase, bodyNormal, bodyRoughness } = useAssetUrls()
   const gltf = useGLTF(model, true)
@@ -193,29 +217,23 @@ function Cartridge3D({ game }: { game: Game }) {
   }, [scene])
 
   useEffect(() => {
+    // Shared body material - one instance across all cartridges, updated in place
+    const bodyMat = getSharedBodyMaterial(bodyBaseTex, bodyNormalTex, bodyRoughnessTex)
+    bodyMat.roughness = tweaks.bodyRoughness
+    bodyMat.envMapIntensity = tweaks.bodyEnvIntensity
+
     clone.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh
         mesh.layers.enable(REFLECTION_LAYER)
 
         if (mesh.name === "model_2") {
-          // -- PBR PLASTIC --
-          // Respect the roughness map: it's the artist's variation.
-          // metalness = 0 always.
-          mesh.material = new THREE.MeshStandardMaterial({
-            map: bodyBaseTex,
-            normalMap: bodyNormalTex,
-            normalScale: new THREE.Vector2(1.0, 1.0),
-            roughnessMap: bodyRoughnessTex,
-            roughness: tweaks.bodyRoughness,
-            metalness: 0.0,
-            envMapIntensity: tweaks.bodyEnvIntensity,
-            color: new THREE.Color(0xffffff),
-          })
+          // -- PBR PLASTIC (shared) --
+          mesh.material = bodyMat
           mesh.castShadow = true
           mesh.receiveShadow = true
         } else if (mesh.name === "boxart") {
-          // -- PAPER STICKER --
+          // -- PAPER STICKER (unique per game) --
           // Matte paper with subtle laminate sheen.
           mesh.material = new THREE.MeshStandardMaterial({
             map: gameArt,
@@ -299,6 +317,7 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
   const setInspectMode = useStore((s) => s.setInspectMode)
   const [hovered, setHovered] = useState(false)
   const isSelected = index === selectedIndex
+  const isNear = Math.abs(index - selectedIndex) <= CULL_RADIUS
   const showCoverBadges = useStore((s) => s.settings.showCoverBadges)
   useCursor(hovered)
 
@@ -341,6 +360,12 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
 
   useFrame((state, delta) => {
     if (!ref.current) return
+
+    // Cull slots far from the selected one - skips draw, shadow & per-frame work.
+    // They pop back in at the screen edge, long before they're visible.
+    ref.current.visible = isNear
+    if (!isNear) return
+
     const dt = clampFrameDelta(delta)
     const l = THREE.MathUtils.lerp
     const sp = LERP_SPEED
@@ -410,7 +435,7 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
       <Suspense fallback={null}>
         <Cartridge3D game={game} />
       </Suspense>
-      {showCoverBadges && (
+      {isNear && showCoverBadges && (
         <Html center position={[0, 0.95, 0.3]} zIndexRange={[12, 0]} distanceFactor={4.5}>
           <div className={getCoverBadge(game).className}>
             {getCoverBadge(game).icon}
