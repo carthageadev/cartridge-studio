@@ -31,6 +31,12 @@ const COUNT = 12;
    sticker faces -Z and needs yaw = atan2(0.021, -0.168) = 3.02. */
 const FACE_YAW = 3.02;
 
+/* Stable per-tile pseudo random, so the arrangement survives reloads. */
+function rand(seed: number): number {
+  const x = Math.sin(seed * 127.1) * 43758.5;
+  return x - Math.floor(x);
+}
+
 function Gallery() {
   const gltf = useGLTF(`${BASE}/model.glb`);
   const [map, normalMap, roughnessMap] = useTexture([
@@ -76,8 +82,8 @@ function Gallery() {
       const row = Math.floor(i / COLS);
       return {
         node: clone,
-        position: [(col - (COLS - 1) / 2) * 3.1, ((COUNT / COLS - 1) / 2 - row) * 3.4, 0] as const,
-        rotationY: FACE_YAW + (i % 3 - 1) * 0.18,
+        position: [(col - (COLS - 1) / 2) * 3.8, ((COUNT / COLS - 1) / 2 - row) * 4.0, 0] as const,
+        rotation: [0, FACE_YAW + (rand(i) - 0.5) * 0.5, (rand(i + 99) - 0.5) * 0.12] as const,
         scale,
       };
     });
@@ -90,7 +96,7 @@ function Gallery() {
           key={i}
           object={tile.node}
           position={tile.position as unknown as THREE.Vector3}
-          rotation={[0, tile.rotationY, 0]}
+          rotation={tile.rotation as unknown as THREE.Euler}
           scale={tile.scale}
         />
       ))}
@@ -101,7 +107,7 @@ function Gallery() {
 export default function App() {
   return (
     <main className="w-screen h-screen bg-black">
-      <Canvas camera={{ position: [0, 0.5, 15], fov: 38 }}>
+      <Canvas camera={{ position: [0, 0.5, 18.5], fov: 38 }}>
         <color attach="background" args={["#000000"]} />
         <ambientLight intensity={0.7} />
         <directionalLight position={[5, 8, 6]} intensity={2.2} />
