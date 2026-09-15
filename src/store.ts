@@ -207,8 +207,13 @@ async function withRetry<T>(fn: () => Promise<T>, attempts = 3): Promise<T> {
   throw lastErr
 }
 
+/* Titles ScreenScraper will not match on their full name. */
+const SEARCH_ALIASES: Record<string, string[]> = {
+  "1080° Snowboarding": ["1080"],
+}
+
 function queryVariants(name: string): string[] {
-  const variants = [name]
+  const variants = [name, ...(SEARCH_ALIASES[name] ?? [])]
   const noPunct = name
     .replace(/[^\p{L}\p{N}\s]/gu, " ")
     .replace(/\s+/g, " ")
@@ -338,7 +343,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: "cartridge-flow-store-v1",
-      version: 7,
+      version: 8,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState: any, version) => {
         if (!persistedState) return persistedState
@@ -365,21 +370,28 @@ export const useStore = create<Store>()(
           showLeva: false,
         }
 
+        /* Fold in seed games that were added after this library was saved. */
+        const knownIds = new Set(persistedState.library.map((game: Game) => game.id))
+        const freshSeeds = seededGames.filter((game) => !knownIds.has(game.id))
+
         return {
           ...baseState,
-          library: persistedState.library.map((game: Game) => {
-            /* Re-fetch auto-resolved art once so the new region priority
-               (European box art) takes effect. Custom cover URLs are kept. */
-            const refetch =
-              isLegacySeedCover(game.coverArt) ||
-              !game.coverArt ||
-              (version < 7 && isResolvedCover(game.coverArt))
-            return {
-              ...game,
-              coverArt: refetch ? NO_IMAGE_COVER : (game.coverArt || NO_IMAGE_COVER),
-              status: refetch ? "pending" : (game.status ?? "pending"),
-            }
-          }),
+          library: [
+            ...persistedState.library.map((game: Game) => {
+              /* Re-fetch auto-resolved art once so the new region priority
+                 (European box art) takes effect. Custom cover URLs are kept. */
+              const refetch =
+                isLegacySeedCover(game.coverArt) ||
+                !game.coverArt ||
+                (version < 7 && isResolvedCover(game.coverArt))
+              return {
+                ...game,
+                coverArt: refetch ? NO_IMAGE_COVER : (game.coverArt || NO_IMAGE_COVER),
+                status: refetch ? "pending" : (game.status ?? "pending"),
+              }
+            }),
+            ...freshSeeds,
+          ],
         }
       },
       partialize: (s) => ({

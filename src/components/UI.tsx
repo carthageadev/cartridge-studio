@@ -411,8 +411,8 @@ export function UI() {
       />
 
       {/* Left centre - game readout */}
-      <div className={cn("absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 z-20 max-w-lg transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
-        <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
+      <div className={cn("absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 z-20 max-w-xl transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
+        <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.25em] text-white/35">
           <span style={{ color: accent }}>{game.genre}</span>
           <span className="w-px h-3 bg-white/15" />
           <span>{game.year}</span>
@@ -422,10 +422,10 @@ export function UI() {
           <span className="tabular-nums">{String(selectedIndex + 1).padStart(2, "0")} / {String(visibleGames.length).padStart(2, "0")}</span>
         </div>
 
-        <h2 className="mt-3 font-display text-white text-3xl sm:text-5xl font-bold tracking-tight leading-none">{game.title}</h2>
+        <h2 className="mt-3 font-display text-white text-4xl sm:text-6xl font-bold tracking-tight leading-none">{game.title}</h2>
 
-        <div className="mt-3.5 flex items-center gap-3">
-          <span className="text-white/40 text-xs font-medium uppercase tracking-[0.15em]">{game.developer}</span>
+        <div className="mt-4 flex items-center gap-3">
+          <span className="text-white/40 text-sm font-medium uppercase tracking-[0.15em]">{game.developer}</span>
           <span className="w-px h-3 bg-white/10" />
           <Stars rating={game.rating} color={accent} />
         </div>
