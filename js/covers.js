@@ -14,12 +14,13 @@ function apiBase() {
 }
 
 /* Route media downloads through the dev proxy when one is configured,
-   same as the API calls. Direct otherwise. */
+   same as the API calls. Media URLs already live under /api2, so keep
+   the path as is. Direct otherwise. */
 function proxify(url) {
   if (window.SS_API === "/api2") {
     try {
       const u = new URL(url);
-      if (u.hostname.includes("screenscraper.fr")) return "/api2" + u.pathname + u.search;
+      if (u.hostname.includes("screenscraper.fr")) return u.pathname + u.search;
     } catch { /* fall through to direct */ }
   }
   return url;
