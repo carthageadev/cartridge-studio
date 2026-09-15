@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react"
 import { useStore } from "../store"
 import {
   Search, Heart, Library, X, BatteryMedium, BatteryLow, BatteryFull,
-  Wifi, Settings, Clock, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2
+  Wifi, Settings, Clock, ChevronUp, ChevronDown, ZoomIn, Plus, Pencil, Trash2
 } from "lucide-react"
 import { Button, Badge, Dialog, DialogContent, DialogTitle, DialogDescription, Slider, Switch } from "./primitives"
 import { useProgress } from "@react-three/drei"
@@ -45,7 +45,7 @@ function KeyGlyph({ children }: { children: React.ReactNode }) {
 }
 
 /* -- Top status bar + settings -- */
-function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () => void; inspectMode: boolean; setInspectMode: (v: boolean) => void }) {
+function StatusBar() {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
   const [battery] = useState(84)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -61,31 +61,24 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
 
   return (
     <>
-      {/* -- Top bar -- */}
-      <header className="relative z-20 flex items-center justify-between gap-3 px-5 sm:px-8 pt-5 pointer-events-none">
+      {/* -- Top bar - brand and system readouts sit on the left, the carousel owns the right -- */}
+      <header className="relative z-20 flex items-center gap-3 sm:gap-5 px-5 sm:px-8 pt-5 pointer-events-none">
         <div className="flex items-center gap-3 shrink-0 pointer-events-auto">
           <div className="w-9 h-9 bg-white flex items-center justify-center">
             <span className="text-black text-sm font-extrabold font-display">64</span>
           </div>
           <div className="hidden sm:block">
             <h1 className="font-display text-white text-base font-bold tracking-wide leading-tight">N64 Flow</h1>
-            <p className="text-white/40 text-[10px] tracking-[0.2em] uppercase font-medium">Cartridge OS</p>
+            <p className="font-mono text-white/40 text-[10px] tracking-[0.2em] uppercase">Cartridge OS</p>
           </div>
         </div>
 
-        <div className="flex-1 min-w-0" />
-
-        <div className="flex items-center gap-2 shrink-0 pointer-events-auto">
-          <Button variant="outline" onClick={onLibrary} className="rounded-xl px-2.5 sm:px-3 py-2 text-xs"><Library className="w-4 h-4" /><span className="hidden md:inline">Library</span></Button>
-          <Button variant={inspectMode ? "primary" : "outline"} onClick={() => setInspectMode(!inspectMode)} className="rounded-xl px-2.5 sm:px-3 py-2 text-xs"><ZoomIn className="w-4 h-4" /><span className="hidden md:inline">{inspectMode ? "Exit Zoom" : "Zoom"}</span></Button>
-
-          <div className="flex items-center gap-2.5 px-2 py-1.5 ml-1 font-mono">
-            <Wifi className="w-4 h-4 text-white/60 hidden sm:block" />
-            <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium"><BatteryIcon level={battery} /><span className="hidden sm:inline">{battery}%</span></div>
-            <div className="w-px h-4 bg-white/10 hidden sm:block" />
-            <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium"><Clock className="w-3.5 h-3.5" /><span className="tabular-nums">{time}</span></div>
-            <button onClick={() => setSettingsOpen(true)} className="ml-0.5 p-1.5 hover:bg-white/10 text-white/60 hover:text-white transition-colors" aria-label="Settings"><Settings className="w-4 h-4" /></button>
-          </div>
+        <div className="flex items-center gap-2.5 px-2 py-1.5 font-mono pointer-events-auto">
+          <Wifi className="w-4 h-4 text-white/60 hidden sm:block" />
+          <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium"><BatteryIcon level={battery} /><span className="hidden sm:inline">{battery}%</span></div>
+          <div className="w-px h-4 bg-white/10 hidden sm:block" />
+          <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium"><Clock className="w-3.5 h-3.5" /><span className="tabular-nums">{time}</span></div>
+          <button onClick={() => setSettingsOpen(true)} className="ml-0.5 p-1.5 hover:bg-white/10 text-white/60 hover:text-white transition-colors" aria-label="Settings"><Settings className="w-4 h-4" /></button>
         </div>
       </header>
 
@@ -284,7 +277,7 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
   )
 }
 
-/* -- Cover rail - thumbnail strip synced to the 3D carousel -- */
+/* -- Cover rail - vertical thumbnail strip synced to the 3D carousel -- */
 function CoverRail({ games, selectedIndex, onSelect }: { games: any[]; selectedIndex: number; onSelect: (i: number) => void }) {
   const railRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
@@ -293,29 +286,27 @@ function CoverRail({ games, selectedIndex, onSelect }: { games: any[]; selectedI
     const rail = railRef.current
     const item = itemRefs.current[selectedIndex]
     if (!rail || !item) return
-    const left = item.offsetLeft - rail.clientWidth / 2 + item.clientWidth / 2
-    rail.scrollTo({ left, behavior: "smooth" })
+    const top = item.offsetTop - rail.clientHeight / 2 + item.clientHeight / 2
+    rail.scrollTo({ top, behavior: "smooth" })
   }, [selectedIndex])
 
   return (
-    <div ref={railRef} className="rail-scroll overflow-x-auto overflow-y-hidden pointer-events-auto">
-      <div className="flex items-end gap-1.5 min-w-max px-5 sm:px-8 pb-3 pt-1 mx-auto" style={{ justifyContent: games.length > 14 ? "flex-start" : "center" }}>
-        {games.map((g: any, i: number) => (
-          <button
-            key={g.id}
-            ref={(el) => { itemRefs.current[i] = el }}
-            onClick={() => onSelect(i)}
-            aria-label={g.title}
-            title={g.title}
-            className={cn(
-              "relative shrink-0 overflow-hidden transition-all duration-300 ease-out",
-              i === selectedIndex ? "w-11 h-14 ring-2 ring-console opacity-100" : "w-7 h-9 ring-1 ring-white/10 opacity-40 hover:opacity-90"
-            )}
-          >
-            <img src={g.coverArt} alt="" className="w-full h-full object-cover" draggable={false} />
-          </button>
-        ))}
-      </div>
+    <div ref={railRef} className="rail-scroll overflow-y-auto overflow-x-hidden max-h-[36vh] flex flex-col items-center gap-1.5 py-0.5">
+      {games.map((g: any, i: number) => (
+        <button
+          key={g.id}
+          ref={(el) => { itemRefs.current[i] = el }}
+          onClick={() => onSelect(i)}
+          aria-label={g.title}
+          title={g.title}
+          className={cn(
+            "relative shrink-0 overflow-hidden transition-all duration-300 ease-out",
+            i === selectedIndex ? "w-10 h-12 ring-2 ring-console opacity-100" : "w-8 h-10 ring-1 ring-white/10 opacity-40 hover:opacity-90"
+          )}
+        >
+          <img src={g.coverArt} alt="" className="w-full h-full object-cover" draggable={false} />
+        </button>
+      ))}
     </div>
   )
 }
@@ -342,8 +333,8 @@ export function UI() {
   useEffect(() => { setInfoVisible(false); const t = setTimeout(() => setInfoVisible(true), 150); return () => clearTimeout(t) }, [selectedIndex])
 
   const handleKey = useCallback((e: KeyboardEvent) => {
-    if (e.key === "ArrowRight" || e.key === "d" || e.key === "D") next()
-    if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") prev()
+    if (e.key === "ArrowRight" || e.key === "ArrowDown" || e.key === "d" || e.key === "D") next()
+    if (e.key === "ArrowLeft" || e.key === "ArrowUp" || e.key === "a" || e.key === "A") prev()
     if (e.key === "i" || e.key === "I") setInspectMode(!inspectMode)
     if (e.key === "h" || e.key === "H") toggleLeva()
   }, [next, prev, inspectMode, setInspectMode, toggleLeva])
@@ -362,31 +353,34 @@ export function UI() {
   return (
     <div className="absolute inset-0 flex flex-col z-10 select-none pointer-events-none">
       {/* Faint neutral ambient glow */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 60%, ${game.color}1f 0%, transparent 70%)` }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 62% 55%, ${game.color}1f 0%, transparent 70%)` }} />
       {/* Dip-to-black veil on zoom toggle - smooth crossfade */}
       <div key={String(inspectMode)} className="absolute inset-0 bg-black pointer-events-none animate-[veil-out_0.5s_ease-out_forwards]" />
 
-      <StatusBar onLibrary={() => setLibraryOpen(true)} inspectMode={inspectMode} setInspectMode={setInspectMode} />
+      <StatusBar />
 
-      {/* Middle: sharp square browse controls + inspect HUD */}
+      {/* Middle: vertical navigation cluster on the left, plus zoom HUD */}
       <div className="relative flex-1 min-h-0">
-        {!inspectMode && (
-          <>
+        {!inspectMode && visibleGames.length > 1 && (
+          <div className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2">
             <button
               onClick={prev}
               aria-label="Previous cartridge"
-              className={cn("absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-16 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 pointer-events-auto cursor-pointer", selectedIndex === 0 && "opacity-0 pointer-events-none")}
+              className="w-10 h-10 shrink-0 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 pointer-events-auto cursor-pointer"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronUp className="w-5 h-5" />
             </button>
+
+            <CoverRail games={visibleGames} selectedIndex={selectedIndex} onSelect={setSelectedIndex} />
+
             <button
               onClick={next}
               aria-label="Next cartridge"
-              className={cn("absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-16 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 pointer-events-auto cursor-pointer", selectedIndex === visibleGames.length - 1 && "opacity-0 pointer-events-none")}
+              className="w-10 h-10 shrink-0 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 pointer-events-auto cursor-pointer"
             >
-              <ChevronRight className="w-5 h-5" />
+              <ChevronDown className="w-5 h-5" />
             </button>
-          </>
+          </div>
         )}
         {inspectMode && (
           <>
@@ -400,76 +394,55 @@ export function UI() {
         )}
       </div>
 
-      {/* Console deck - cover rail over the info row, everything anchored to the bottom edge */}
-      <div className="relative z-20 shrink-0">
-        {!inspectMode && visibleGames.length > 1 && (
-          <CoverRail games={visibleGames} selectedIndex={selectedIndex} onSelect={setSelectedIndex} />
-        )}
+      {/* Deck - info anchored bottom left, the carousel owns the right */}
+      <div className="relative z-20 shrink-0 border-t border-white/[0.07] bg-gradient-to-t from-black/80 to-transparent">
+        <div className={cn("px-5 sm:px-8 pt-4 pb-5 transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
+          <div className="max-w-xl">
+            <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
+              <span className="text-console">{game.genre}</span>
+              <span className="w-px h-3 bg-white/15" />
+              <span>{game.year}</span>
+              <span className="w-px h-3 bg-white/15" />
+              <span>{game.players}</span>
+              <span className="w-px h-3 bg-white/15" />
+              <span className="tabular-nums">{String(selectedIndex + 1).padStart(2, "0")} / {String(visibleGames.length).padStart(2, "0")}</span>
+            </div>
 
-        <div className="border-t border-white/[0.07] bg-gradient-to-t from-black/80 to-transparent">
-          <div className={cn("px-5 sm:px-8 pt-4 pb-5 transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
-            <div className="flex items-end justify-between gap-8">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
-                  <span className="text-console">{game.genre}</span>
-                  <span className="w-px h-3 bg-white/15" />
-                  <span>{game.year}</span>
-                  <span className="w-px h-3 bg-white/15" />
-                  <span>{game.players}</span>
-                </div>
+            <h2 className="mt-2 font-display text-white text-2xl sm:text-[34px] font-bold tracking-tight leading-none truncate">{game.title}</h2>
 
-                <h2 className="mt-2 font-display text-white text-2xl sm:text-[34px] font-bold tracking-tight leading-none truncate">{game.title}</h2>
+            <div className="mt-2.5 flex items-center gap-3">
+              <span className="text-white/35 text-xs font-medium">{game.developer}</span>
+              <span className="w-px h-3 bg-white/10" />
+              <Stars rating={game.rating} color={game.color} />
+            </div>
 
-                <div className="mt-2.5 flex items-center gap-3">
-                  <span className="text-white/35 text-xs font-medium">{game.developer}</span>
-                  <span className="w-px h-3 bg-white/10" />
-                  <Stars rating={game.rating} color={game.color} />
-                </div>
+            <p className="mt-2.5 text-white/45 text-xs sm:text-sm leading-relaxed line-clamp-2">{game.description}</p>
 
-                <p className="mt-2.5 text-white/45 text-xs sm:text-sm leading-relaxed max-w-xl line-clamp-2">{game.description}</p>
+            <div className="mt-3.5 flex items-center gap-2 pointer-events-auto">
+              <Button variant="outline" onClick={() => toggleFavorite(game.id)} className={cn("text-xs", favorites.includes(game.id) && "border-console/50 text-console bg-console/10")}>
+                <Heart className={cn("w-4 h-4", favorites.includes(game.id) && "fill-current")} />
+                {favorites.includes(game.id) ? "Favorited" : "Favorite"}
+              </Button>
+              <Button onClick={() => setInspectMode(!inspectMode)} className="text-xs"><ZoomIn className="w-4 h-4" /> {inspectMode ? "Exit Zoom" : "Zoom In"}</Button>
+              <Button variant="ghost" onClick={() => setLibraryOpen(true)} className="text-xs"><Library className="w-4 h-4" /> Library</Button>
+            </div>
 
-                <div className="mt-3.5 flex items-center gap-2 pointer-events-auto">
-                  <Button variant="outline" onClick={() => toggleFavorite(game.id)} className={cn("text-xs", favorites.includes(game.id) && "border-console/50 text-console bg-console/10")}>
-                    <Heart className={cn("w-4 h-4", favorites.includes(game.id) && "fill-current")} />
-                    {favorites.includes(game.id) ? "Favorited" : "Favorite"}
-                  </Button>
-                  <Button onClick={() => setInspectMode(!inspectMode)} className="text-xs"><ZoomIn className="w-4 h-4" /> {inspectMode ? "Exit Zoom" : "Zoom In"}</Button>
-                  <span className="ml-1 font-mono text-white/30 text-[11px] tabular-nums">{String(selectedIndex + 1).padStart(2, "0")} / {String(visibleGames.length).padStart(2, "0")}</span>
-                </div>
-              </div>
-
-              {/* Button hints - same row as the info, right anchored */}
-              <div className="hidden lg:flex flex-col items-end gap-1.5 shrink-0 pb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
-                {inspectMode ? (
-                  <>
-                    <span className="flex items-center gap-1.5"><KeyGlyph>Drag</KeyGlyph> Rotate</span>
-                    <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Exit zoom</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="flex items-center gap-1.5"><KeyGlyph>←</KeyGlyph><KeyGlyph>→</KeyGlyph> Browse</span>
-                    <span className="flex items-center gap-1.5"><KeyGlyph>Click</KeyGlyph> Select</span>
-                    <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
-                  </>
-                )}
-              </div>
+            <div className="mt-3 hidden sm:flex items-center gap-5 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
+              {inspectMode ? (
+                <>
+                  <span className="flex items-center gap-1.5"><KeyGlyph>Drag</KeyGlyph> Rotate</span>
+                  <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Exit zoom</span>
+                </>
+              ) : (
+                <>
+                  <span className="flex items-center gap-1.5"><KeyGlyph>↑</KeyGlyph><KeyGlyph>↓</KeyGlyph> Browse</span>
+                  <span className="flex items-center gap-1.5"><KeyGlyph>Scroll</KeyGlyph> Spin</span>
+                  <span className="flex items-center gap-1.5"><KeyGlyph>Click</KeyGlyph> Select</span>
+                  <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
+                </>
+              )}
             </div>
           </div>
-        </div>
-
-        {/* Mobile hints */}
-        <div className="lg:hidden flex items-center justify-center gap-5 pb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
-          {inspectMode ? (
-            <>
-              <span className="flex items-center gap-1.5"><KeyGlyph>Drag</KeyGlyph> Rotate</span>
-              <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Exit</span>
-            </>
-          ) : (
-            <>
-              <span className="flex items-center gap-1.5"><KeyGlyph>←</KeyGlyph><KeyGlyph>→</KeyGlyph> Browse</span>
-              <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
-            </>
-          )}
         </div>
       </div>
 
