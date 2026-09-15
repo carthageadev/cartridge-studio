@@ -4,7 +4,7 @@ import {
   Search, Heart, Library, X, BatteryMedium, BatteryLow, BatteryFull,
   Wifi, Settings, Clock, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2
 } from "lucide-react"
-import { Button, Badge, Dialog, DialogContent, DialogTitle, DialogDescription, Tabs, TabsList, TabsTrigger, Slider, Switch } from "./primitives"
+import { Button, Badge, Dialog, DialogContent, DialogTitle, DialogDescription, Slider, Switch } from "./primitives"
 import { useProgress } from "@react-three/drei"
 import { cn } from "../utils/cn"
 
@@ -178,79 +178,105 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent wide tall>
+        <div className="flex flex-col h-full">
 
-        {/* Header */}
-        <div className="flex items-end justify-between mb-4">
-          <div>
-            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/35 mb-1">Collection · {visibleGames.length} titles</p>
-            <DialogTitle className="flex items-center gap-2 text-2xl font-display"><Library className="w-5 h-5 text-console" /> Cartridge Library</DialogTitle>
-          </div>
-          <Button onClick={openAdd} className="text-xs"><Plus className="w-4 h-4" /> Add Game</Button>
-        </div>
-
-        {/* Search + filters */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 mb-3">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-            <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search titles, genres, developers…" className="w-full bg-white/5 border border-white/10 rounded-xl pl-9 pr-9 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/25 transition-colors" />
-            {searchQuery && <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white"><X className="w-3.5 h-3.5" /></button>}
-          </div>
-          <Button variant="outline" onClick={() => setOnlyFavorites(!onlyFavorites)} className={cn(onlyFavorites && "border-pink-500/40 text-pink-300 bg-pink-500/10")}><Heart className={cn("w-4 h-4", onlyFavorites && "fill-current")} /> Favorites</Button>
-        </div>
-
-        <Tabs value={sortMode} onValueChange={(v) => setSortMode(v as typeof sortMode)} className="mb-4">
-          <TabsList>{SORT_MODES.map((m) => <TabsTrigger key={m.key} value={m.key}>{m.label}</TabsTrigger>)}</TabsList>
-        </Tabs>
-
-        {/* Add/Edit form inline (no nested portal - clean, no clipping) */}
-        {formOpen && (
-          <div className="mb-4 p-5 rounded-2xl bg-white/[0.04] border border-white/10 animate-float-in">
-            <div className="flex justify-between mb-4"><div className="font-bold text-white">{editing ? "Edit Cartridge" : "Add New Game"}</div><button onClick={closeForm} className="text-white/40 hover:text-white"><X className="w-4 h-4" /></button></div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Title" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm col-span-2" />
-              <input value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} placeholder="Year" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm" />
-              <input value={form.genre} onChange={(e) => setForm({ ...form, genre: e.target.value })} placeholder="Genre" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm" />
-              <input value={form.developer} onChange={(e) => setForm({ ...form, developer: e.target.value })} placeholder="Developer" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm col-span-2" />
-              <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm h-16 col-span-2 resize-y" />
-              <input value={form.coverArt} onChange={(e) => setForm({ ...form, coverArt: e.target.value })} placeholder="Cover URL" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm" />
-              <input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="#Hex color" className="bg-white/5 border border-white/10 rounded-xl px-4 py-2.5 text-sm" />
+          {/* Top bar */}
+          <div className="flex items-center justify-between gap-4 pb-4 border-b border-white/[0.07]">
+            <div className="flex items-baseline gap-3 min-w-0">
+              <DialogTitle className="flex items-center gap-2 text-lg font-display tracking-wide"><Library className="w-4 h-4 text-console" /> Cartridge Library</DialogTitle>
+              <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/35 whitespace-nowrap">{visibleGames.length} titles</span>
             </div>
-            <div className="flex gap-3 mt-4">
-              <Button variant="ghost" onClick={closeForm} className="flex-1">Cancel</Button>
-              <Button onClick={saveForm} className="flex-1">{editing ? "Save" : "Add"}</Button>
+            <div className="flex items-center gap-2 shrink-0">
+              <Button onClick={openAdd} className="text-xs"><Plus className="w-4 h-4" /> Add Game</Button>
+              <button onClick={onClose} aria-label="Close" className="p-2 text-white/40 hover:text-white hover:bg-white/5 transition-colors"><X className="w-4 h-4" /></button>
             </div>
           </div>
-        )}
 
-        {/* Grid */}
-        <div className="flex-1 overflow-y-auto -mx-1 px-1">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-3">
-            {visibleGames.map((game: any, i: number) => {
-              const isFav = favorites.includes(game.id)
-              const isSelected = i === selectedIndex
-              return (
-                <div key={game.id} onClick={() => { setSelectedIndex(i); onClose() }} className={cn("group relative rounded-2xl border overflow-hidden cursor-pointer transition-all", isSelected ? "border-console/60 ring-2 ring-console/30 shadow-xl shadow-console/10" : "border-transparent hover:border-white/15")}>
-                  <div className="relative aspect-[3/4] bg-black/40">
-                    <img src={game.coverArt} alt={game.title} className="w-full h-full object-cover" />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+          <div className="flex flex-col md:flex-row flex-1 min-h-0 gap-5 pt-4">
 
-                    {/* Quick actions */}
-                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button onClick={(e) => { e.stopPropagation(); toggleFavorite(game.id) }} className={cn("p-1.5 rounded-lg bg-black/50 backdrop-blur", isFav ? "text-pink-400" : "text-white/70 hover:text-white")}><Heart className={cn("w-3.5 h-3.5", isFav && "fill-current")} /></button>
-                      <button onClick={(e) => { e.stopPropagation(); openEdit(game) }} className="p-1.5 rounded-lg bg-black/50 backdrop-blur text-white/70 hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={(e) => handleRemove(game.id, e)} className="p-1.5 rounded-lg bg-black/50 backdrop-blur text-white/70 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
-                    </div>
+            {/* Left nav column - filters, console settings style */}
+            <aside className="w-full md:w-48 shrink-0 flex flex-col gap-4 md:overflow-y-auto">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+                <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search…" className="w-full bg-white/5 border border-white/10 pl-9 pr-9 py-2.5 text-sm text-white placeholder:text-white/30 focus:outline-none focus:border-white/25 transition-colors" />
+                {searchQuery && <button onClick={() => setSearchQuery("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-white/30 hover:text-white"><X className="w-3.5 h-3.5" /></button>}
+              </div>
 
-                    {isSelected && <div className="absolute top-2 left-2 text-[9px] font-bold px-2 py-0.5 bg-console text-black tracking-wider">NOW</div>}
+              <div>
+                <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/30 mb-2">Sort</p>
+                <div className="flex md:flex-col flex-wrap gap-1 md:gap-0">
+                  {SORT_MODES.map((m) => (
+                    <button
+                      key={m.key}
+                      onClick={() => setSortMode(m.key)}
+                      className={cn("text-left px-3 py-2 text-xs font-medium border-l-2 transition-colors whitespace-nowrap", sortMode === m.key ? "border-console text-white bg-white/5" : "border-transparent text-white/45 hover:text-white hover:bg-white/[0.03]")}
+                    >
+                      {m.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                    <div className="absolute bottom-0 left-0 right-0 p-3">
-                      <div className="text-white text-xs font-bold leading-tight line-clamp-2 drop-shadow-md">{game.title}</div>
-                      <div className="text-white/60 text-[10px] mt-0.5">{game.year} · {game.genre}</div>
-                    </div>
+              <button
+                onClick={() => setOnlyFavorites(!onlyFavorites)}
+                className={cn("flex items-center gap-2 px-3 py-2 text-xs font-medium border-l-2 transition-colors md:mt-auto", onlyFavorites ? "border-console text-white bg-white/5" : "border-transparent text-white/45 hover:text-white hover:bg-white/[0.03]")}
+              >
+                <Heart className={cn("w-3.5 h-3.5", onlyFavorites && "fill-current")} /> Favorites only
+              </button>
+            </aside>
+
+            {/* Main column - grid */}
+            <div className="flex-1 min-w-0 flex flex-col min-h-0">
+              {formOpen && (
+                <div className="mb-4 p-5 bg-white/[0.04] border border-white/10 animate-float-in shrink-0">
+                  <div className="flex justify-between mb-4"><div className="font-bold text-white">{editing ? "Edit Cartridge" : "Add New Game"}</div><button onClick={closeForm} className="text-white/40 hover:text-white"><X className="w-4 h-4" /></button></div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Title" className="bg-white/5 border border-white/10 px-4 py-2.5 text-sm col-span-2" />
+                    <input value={form.year} onChange={(e) => setForm({ ...form, year: e.target.value })} placeholder="Year" className="bg-white/5 border border-white/10 px-4 py-2.5 text-sm" />
+                    <input value={form.genre} onChange={(e) => setForm({ ...form, genre: e.target.value })} placeholder="Genre" className="bg-white/5 border border-white/10 px-4 py-2.5 text-sm" />
+                    <input value={form.developer} onChange={(e) => setForm({ ...form, developer: e.target.value })} placeholder="Developer" className="bg-white/5 border border-white/10 px-4 py-2.5 text-sm col-span-2" />
+                    <textarea value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} placeholder="Description" className="bg-white/5 border border-white/10 px-4 py-2.5 text-sm h-16 col-span-2 resize-y" />
+                    <input value={form.coverArt} onChange={(e) => setForm({ ...form, coverArt: e.target.value })} placeholder="Cover URL" className="bg-white/5 border border-white/10 px-4 py-2.5 text-sm" />
+                    <input value={form.color} onChange={(e) => setForm({ ...form, color: e.target.value })} placeholder="#Hex color" className="bg-white/5 border border-white/10 px-4 py-2.5 text-sm" />
+                  </div>
+                  <div className="flex gap-3 mt-4">
+                    <Button variant="ghost" onClick={closeForm} className="flex-1">Cancel</Button>
+                    <Button onClick={saveForm} className="flex-1">{editing ? "Save" : "Add"}</Button>
                   </div>
                 </div>
-              )
-            })}
+              )}
+
+              <div className="flex-1 overflow-y-auto">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-3">
+                  {visibleGames.map((game: any, i: number) => {
+                    const isFav = favorites.includes(game.id)
+                    const isSelected = i === selectedIndex
+                    return (
+                      <div key={game.id} onClick={() => { setSelectedIndex(i); onClose() }} className={cn("group relative border overflow-hidden cursor-pointer transition-colors", isSelected ? "border-console ring-2 ring-console/30" : "border-white/[0.07] hover:border-white/25")}>
+                        <div className="relative aspect-[3/4] bg-black/40">
+                          <img src={game.coverArt} alt={game.title} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+
+                          {/* Quick actions */}
+                          <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <button onClick={(e) => { e.stopPropagation(); toggleFavorite(game.id) }} className={cn("p-1.5 bg-black/60", isFav ? "text-console" : "text-white/70 hover:text-white")}><Heart className={cn("w-3.5 h-3.5", isFav && "fill-current")} /></button>
+                            <button onClick={(e) => { e.stopPropagation(); openEdit(game) }} className="p-1.5 bg-black/60 text-white/70 hover:text-white"><Pencil className="w-3.5 h-3.5" /></button>
+                            <button onClick={(e) => handleRemove(game.id, e)} className="p-1.5 bg-black/60 text-white/70 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
+                          </div>
+
+                          {isSelected && <div className="absolute top-2 left-2 text-[9px] font-bold px-2 py-0.5 bg-console text-black tracking-wider">NOW</div>}
+
+                          <div className="absolute bottom-0 left-0 right-0 p-3">
+                            <div className="text-white text-xs font-bold leading-tight line-clamp-2 drop-shadow-md">{game.title}</div>
+                            <div className="font-mono text-white/55 text-[10px] mt-1 tracking-wide">{game.year} · {game.genre}</div>
+                          </div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </DialogContent>
