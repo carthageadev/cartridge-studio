@@ -52,10 +52,6 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode, onHome }: { onLibra
   const settings = useStore((s) => s.settings)
   const updateSettings = useStore((s) => s.updateSettings)
   const resetSettings = useStore((s) => s.resetSettings)
-  const sortMode = useStore((s) => s.sortMode)
-  const setSortMode = useStore((s) => s.setSortMode)
-  const onlyFavorites = useStore((s) => s.onlyFavorites)
-  const setOnlyFavorites = useStore((s) => s.setOnlyFavorites)
   const resetSceneTweaks = useStore((s) => s.resetSceneTweaks)
 
   useEffect(() => {
@@ -77,18 +73,7 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode, onHome }: { onLibra
           </div>
         </div>
 
-        <nav className="hidden md:flex flex-1 justify-center min-w-0 pointer-events-auto">
-          <div className="flex items-center gap-5">
-            {SORT_MODES.map((m) => (
-              <button key={m.key} onClick={() => setSortMode(m.key)} className={cn("px-1 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] transition-colors whitespace-nowrap border-b-2", sortMode === m.key ? "text-white border-console" : "text-white/40 border-transparent hover:text-white")}>
-                {m.label}
-              </button>
-            ))}
-            <button onClick={() => setOnlyFavorites(!onlyFavorites)} className={cn("px-1 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] transition-colors flex items-center gap-1.5 whitespace-nowrap border-b-2", onlyFavorites ? "text-white border-console" : "text-white/40 border-transparent hover:text-white")}>
-              <Heart className={cn("w-3 h-3", onlyFavorites && "fill-current")} /> Favs
-            </button>
-          </div>
-        </nav>
+        <div className="flex-1 min-w-0" />
 
         <div className="flex items-center gap-2 shrink-0 pointer-events-auto">
           <Button variant="outline" onClick={onLibrary} className="rounded-xl px-2.5 sm:px-3 py-2 text-xs"><Library className="w-4 h-4" /><span className="hidden md:inline">Library</span></Button>
