@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from "react"
 import { useStore } from "../store"
 import {
   Search, Heart, Library, X, BatteryMedium, BatteryLow, BatteryFull,
-  Wifi, Settings, Clock, ChevronUp, ChevronDown, ZoomIn, Plus, Pencil, Trash2
+  Wifi, Settings, Clock, ChevronUp, ChevronDown, ZoomIn, Plus, Pencil, Trash2, RefreshCw
 } from "lucide-react"
 import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Slider, Switch } from "./primitives"
 import { useProgress } from "@react-three/drei"
@@ -59,6 +59,7 @@ function StatusBar({ inspectMode, setInspectMode, onLibrary, isFavorite, onToggl
   const updateSettings = useStore((s) => s.updateSettings)
   const resetSettings = useStore((s) => s.resetSettings)
   const resetSceneTweaks = useStore((s) => s.resetSceneTweaks)
+  const refetchArt = useStore((s) => s.refetchArt)
 
   useEffect(() => {
     const t = setInterval(() => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })), 1000)
@@ -151,6 +152,24 @@ function StatusBar({ inspectMode, setInspectMode, onLibrary, isFavorite, onToggl
               <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-white/80">High Quality Textures</span><Switch checked={settings.highQuality} onCheckedChange={(checked) => updateSettings({ highQuality: checked })} /></div>
               <div className="flex items-center justify-between px-4 py-3"><span className="text-sm text-white/80">CRT Scanline Overlay</span><Switch checked={settings.crtOverlay} onCheckedChange={(checked) => updateSettings({ crtOverlay: checked })} /></div>
             </div>
+          </div>
+
+          {/* -- Artwork -- */}
+          <div className="mb-5">
+            <p className="text-[10px] uppercase tracking-[0.2em] text-white/30 font-bold mb-3">Artwork</p>
+            <Button
+              variant="outline"
+              onClick={() => {
+                refetchArt()
+                setSettingsOpen(false)
+              }}
+              className="w-full text-xs"
+            >
+              <RefreshCw className="w-4 h-4" /> Refetch Cover Art
+            </Button>
+            <p className="mt-2 text-[11px] leading-relaxed text-white/35">
+              Downloads the cover art again for every game. Covers you entered by hand are kept.
+            </p>
           </div>
 
           {/* -- Reset -- */}

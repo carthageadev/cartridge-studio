@@ -103,6 +103,7 @@ interface Store {
   addGame: (game: Omit<Game, "id">) => void
   removeGame: (id: number) => void
   updateGame: (id: number, patch: Partial<Game>) => void
+  refetchArt: () => void
   getVisibleGames: () => Game[]
 }
 
@@ -314,6 +315,17 @@ export const useStore = create<Store>()(
         set((s) => ({
           library: s.library.map((g) => (g.id === id ? { ...g, ...patch } : g)),
         })),
+      /* Drop auto-fetched art and fetch it again. Hand-typed cover URLs
+         and the games' own data are left untouched. */
+      refetchArt: () => {
+        const games = get().library
+        for (const g of games) {
+          if (!g.coverArt || isResolvedCover(g.coverArt)) {
+            get().updateGame(g.id, { coverArt: NO_IMAGE_COVER, status: "pending" })
+          }
+        }
+        startLibraryResolver()
+      },
       getVisibleGames: () => {
         const s = get()
         return sortLibraryGames(s.library, {
@@ -452,5 +464,7 @@ export function startLibraryResolver() {
   runningResolver = true
   resolveLibrary().finally(() => {
     runningResolver = false
+    /* Anything queued while the run was in flight gets picked up. */
+    if (useStore.getState().library.some((g) => g.status === "pending")) startLibraryResolver()
   })
 }
