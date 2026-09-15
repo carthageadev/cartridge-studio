@@ -168,14 +168,22 @@ function CartridgeRig({
 
 export function Carousel() {
   const games = useStore((s) => s.games)
-  const focus = useStore((s) => s.focus)
   const gl = useThree((s) => s.gl)
 
   const flow = useMemo<SharedFlow>(
     () => ({ scroll: 0, target: 0, count: 0, loop: false }),
     []
   )
-  flow.target = focus
+
+  // Track the focused index through a store subscription instead of a React
+  // subscription, so a step does not re-render the whole ring.
+  useEffect(() => {
+    flow.target = useStore.getState().focus
+    return useStore.subscribe((s) => {
+      flow.target = s.focus
+    })
+  }, [flow])
+
   flow.count = games.length
   flow.loop = canLoop(games.length)
 
