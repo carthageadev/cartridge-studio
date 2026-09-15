@@ -362,7 +362,16 @@ export function UI() {
             </button>
           </>
         )}
-        {inspectMode && <div className="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none"><Badge className="bg-black/70 text-white/50 font-mono text-[10px] tracking-[0.2em]">ZOOM · DRAG TO ROTATE</Badge></div>}
+        {inspectMode && (
+          <>
+            <div className="absolute inset-x-8 inset-y-6 sm:inset-x-14 sm:inset-y-10 pointer-events-none">
+              {["top-0 left-0 border-t border-l", "top-0 right-0 border-t border-r", "bottom-0 left-0 border-b border-l", "bottom-0 right-0 border-b border-r"].map((pos) => (
+                <span key={pos} className={cn("absolute w-5 h-5 border-console/50", pos)} />
+              ))}
+            </div>
+            <div className="absolute top-1 left-1/2 -translate-x-1/2 pointer-events-none"><Badge className="bg-black/70 text-white/50 font-mono text-[10px] tracking-[0.2em]">ZOOM · DRAG TO ROTATE</Badge></div>
+          </>
+        )}
       </div>
 
       {/* Console deck - cover rail over the info row, everything anchored to the bottom edge */}
@@ -398,16 +407,25 @@ export function UI() {
                     <Heart className={cn("w-4 h-4", favorites.includes(game.id) && "fill-current")} />
                     {favorites.includes(game.id) ? "Favorited" : "Favorite"}
                   </Button>
-                  <Button onClick={() => setInspectMode(true)} className="text-xs"><ZoomIn className="w-4 h-4" /> Zoom In</Button>
+                  <Button onClick={() => setInspectMode(!inspectMode)} className="text-xs"><ZoomIn className="w-4 h-4" /> {inspectMode ? "Exit Zoom" : "Zoom In"}</Button>
                   <span className="ml-1 font-mono text-white/30 text-[11px] tabular-nums">{String(selectedIndex + 1).padStart(2, "0")} / {String(visibleGames.length).padStart(2, "0")}</span>
                 </div>
               </div>
 
               {/* Button hints - same row as the info, right anchored */}
               <div className="hidden lg:flex flex-col items-end gap-1.5 shrink-0 pb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
-                <span className="flex items-center gap-1.5"><KeyGlyph>←</KeyGlyph><KeyGlyph>→</KeyGlyph> Browse</span>
-                <span className="flex items-center gap-1.5"><KeyGlyph>Click</KeyGlyph> Select</span>
-                <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
+                {inspectMode ? (
+                  <>
+                    <span className="flex items-center gap-1.5"><KeyGlyph>Drag</KeyGlyph> Rotate</span>
+                    <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Exit zoom</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex items-center gap-1.5"><KeyGlyph>←</KeyGlyph><KeyGlyph>→</KeyGlyph> Browse</span>
+                    <span className="flex items-center gap-1.5"><KeyGlyph>Click</KeyGlyph> Select</span>
+                    <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
+                  </>
+                )}
               </div>
             </div>
           </div>
