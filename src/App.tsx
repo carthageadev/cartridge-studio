@@ -3,11 +3,12 @@ import { Leva } from "leva"
 import { Routes, Route } from "react-router-dom"
 import { DebugLightPanel } from "./components/DebugLightPanel"
 import { Scene } from "./components/Scene"
-import { UI, LoadingScreen } from "./components/UI"
+import { UI, LoadingScreen, HomeScreen } from "./components/UI"
 import { startLibraryResolver, useStore } from "./store"
 
 function App() {
   const [loading, setLoading] = useState(true)
+  const [view, setView] = useState<"grid" | "stage">("grid")
   const crtOverlay = useStore((s) => s.settings.crtOverlay)
   const showLeva = useStore((s) => s.showLeva)
 
@@ -27,7 +28,7 @@ function App() {
         className={`absolute inset-0 transition-opacity duration-1000 ${loading ? "opacity-0" : "opacity-100"}`}
       >
         <Routes>
-          <Route path="/" element={<><Scene /><UI /></>} />
+          <Route path="/" element={view === "grid" ? <HomeScreen onPlay={() => setView("stage")} /> : <><Scene /><UI onHome={() => setView("grid")} /></>} />
           {/* Add more routes here as needed */}
         </Routes>
       </div>
