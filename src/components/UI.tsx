@@ -5,6 +5,7 @@ import {
   Wifi, Settings, Clock, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2
 } from "lucide-react"
 import { Button, Badge, Dialog, DialogContent, DialogTitle, DialogDescription, Tabs, TabsList, TabsTrigger, Slider, Switch } from "./primitives"
+import { useProgress } from "@react-three/drei"
 import { cn } from "../utils/cn"
 
 const SORT_MODES = [
@@ -66,7 +67,7 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
             <span className="text-white text-sm font-extrabold">64</span>
           </div>
           <div className="hidden sm:block">
-            <h1 className="text-white text-base font-bold tracking-wide leading-tight">N64 Flow</h1>
+            <h1 className="font-display text-white text-base font-bold tracking-wide leading-tight">N64 Flow</h1>
             <p className="text-white/40 text-[10px] tracking-[0.2em] uppercase font-medium">Cartridge OS</p>
           </div>
         </div>
@@ -192,7 +193,7 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <DialogTitle className="flex items-center gap-2 text-xl"><Library className="w-5 h-5 text-indigo-400" /> Cartridge Library</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 text-xl font-display"><Library className="w-5 h-5 text-indigo-400" /> Cartridge Library</DialogTitle>
             <DialogDescription>Add, edit or remove games from your personal collection.</DialogDescription>
           </div>
           <Button onClick={openAdd} className="rounded-xl text-xs"><Plus className="w-4 h-4" /> Add Game</Button>
@@ -311,6 +312,8 @@ export function UI() {
     <div className="absolute inset-0 flex flex-col z-10 select-none pointer-events-none">
       {/* Faint neutral ambient glow */}
       <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 60%, ${game.color}1f 0%, transparent 70%)` }} />
+      {/* Dip-to-black veil on zoom toggle - smooth crossfade */}
+      <div key={String(inspectMode)} className="absolute inset-0 bg-black pointer-events-none animate-[veil-out_0.5s_ease-out_forwards]" />
 
       <StatusBar onLibrary={() => setLibraryOpen(true)} inspectMode={inspectMode} setInspectMode={setInspectMode} />
 
@@ -322,7 +325,7 @@ export function UI() {
             <button className={cn("absolute right-5 sm:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full glass flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all duration-300 pointer-events-auto cursor-pointer hover:scale-110 active:scale-95", selectedIndex === visibleGames.length - 1 && "opacity-0 pointer-events-none")} onClick={next}><ChevronRight className="w-6 h-6" /></button>
           </>
         )}
-        {inspectMode && <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-none"><Badge className="bg-white/10 text-white/60 border-white/10 tracking-wider">ZOOM MODE · DRAG TO ROTATE</Badge></div>}
+        {inspectMode && <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-none"><Badge className="bg-black/70 text-white/50 font-mono text-[10px] tracking-[0.2em]">ZOOM MODE · DRAG TO ROTATE</Badge></div>}
       </div>
 
       {/* Bottom info - ultra clean, no heavy gradient, the beautiful 3D cartridges are the star */}
@@ -341,7 +344,7 @@ export function UI() {
                   <span className="text-white/20">·</span>
                   <span className="text-white/40 text-xs">{game.players}</span>
                 </div>
-                <h2 className="text-white text-2xl sm:text-4xl font-extrabold mb-1 tracking-tight leading-tight truncate" style={{ textShadow: `0 0 55px rgba(180,190,255,0.15), 0 2px 14px rgba(0,0,0,0.35)` }}>{game.title}</h2>
+                <h2 className="font-display text-white text-2xl sm:text-4xl font-bold mb-1 tracking-tight leading-tight truncate" style={{ textShadow: `0 0 55px rgba(180,190,255,0.15), 0 2px 14px rgba(0,0,0,0.35)` }}>{game.title}</h2>
                 <p className="text-white/55 text-xs sm:text-sm leading-relaxed max-w-xl line-clamp-2">{game.description}</p>
                 <div className="flex items-center gap-3 mt-2">
                   <span className="text-white/35 text-xs font-medium">{game.developer}</span>
@@ -366,20 +369,17 @@ export function UI() {
   )
 }
 
-/* -- Loading screen -- */
+/* -- Loading screen - flat, sharp, real load progress -- */
 export function LoadingScreen() {
-  const [dots, setDots] = useState("")
-  useEffect(() => { const id = setInterval(() => setDots((d) => (d.length >= 3 ? "" : d + ".")), 400); return () => clearInterval(id) }, [])
+  const progress = useProgress((s) => s.progress)
+  const pct = Math.round(progress)
   return (
-    <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-50">
-      <div className="relative w-20 h-20 mb-8">
-        <div className="absolute inset-0 rounded-full border-2 border-indigo-500/20 border-t-indigo-400 animate-spin" />
-        <div className="absolute inset-2 rounded-full border-2 border-purple-500/20 border-b-purple-400" style={{ animation: "spin 1.2s linear infinite reverse" }} />
-        <div className="absolute inset-4 rounded-full border-2 border-pink-500/20 border-l-pink-400 animate-spin" />
-        <div className="absolute inset-0 flex items-center justify-center"><div className="w-3 h-3 rounded-full bg-indigo-400/60 animate-pulse" /></div>
+    <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-50 animate-[modal-fade-in_0.4s_ease-out]">
+      <p className="font-display text-white/90 text-lg font-bold tracking-[0.35em] uppercase pl-2">N64 Flow</p>
+      <div className="mt-6 h-px w-44 bg-white/10 overflow-hidden">
+        <div className="h-full bg-white/90 transition-[width] duration-300 ease-out" style={{ width: `${pct}%` }} />
       </div>
-      <p className="text-white/50 text-sm tracking-[0.3em] uppercase font-medium">Loading{dots}</p>
-      <p className="text-white/20 text-xs mt-2 tracking-wider">Preparing your collection</p>
+      <p className="mt-3 font-mono text-white/30 text-[11px] tabular-nums">{pct}%</p>
     </div>
   )
 }
