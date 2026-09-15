@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>CARTRIDGE OS - Retro Launcher</title>
+<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Press+Start+2P&display=swap" rel="stylesheet">
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.184.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/"
+  }
+}
+</script>
+<style>
+  @property --accent { syntax: '<color>'; inherits: true; initial-value: #E52521; }
+
+  :root {
+    --accent: #E52521;
+    --bg: #f3f3f6;
+    --fg: #121218;
+    --muted: rgba(18,18,24,.55);
+    --glass: rgba(255,255,255,.6);
+    --glass-b: rgba(0,0,0,.07);
+    --line: rgba(0,0,0,.08);
+    --shadow: 0 12px 32px rgba(20,20,40,.10);
+    transition: --accent .7s ease;
+  }
+  html.dark {
+    --bg: #0c0c11;
+    --fg: #f4f4f8;
+    --muted: rgba(244,244,248,.55);
+    --glass: rgba(26,26,34,.55);
+    --glass-b: rgba(255,255,255,.09);
+    --line: rgba(255,255,255,.1);
+    --shadow: 0 12px 32px rgba(0,0,0,.45);
+  }
+
+  html, body { height: 100%; margin: 0; }
+  body {
+    background: var(--bg); color: var(--fg);
+    font-family: Outfit, system-ui, sans-serif;
+    overflow: hidden; -webkit-font-smoothing: antialiased;
+    transition: background .5s ease, color .5s ease;
+  }
+  .pix { font-family: 'Press Start 2P', monospace; }
+  button { font: inherit; color: inherit; }
+
+  /* ---------- backdrop layers ---------- */
+  #wash {
+    position: fixed; inset: 0; z-index: 0;
+    background:
+      radial-gradient(70% 60% at 50% 26%, color-mix(in srgb, var(--accent) 32%, transparent), transparent 70%),
+      radial-gradient(40% 40% at 88% 92%, color-mix(in srgb, var(--accent) 16%, transparent), transparent 70%),
+      var(--bg);
+  }
+  #grid {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      linear-gradient(var(--line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--line) 1px, transparent 1px);
+    background-size: 72px 72px;
+    -webkit-mask-image: radial-gradient(60% 60% at 50% 40%, #000 20%, transparent 100%);
+            mask-image: radial-gradient(60% 60% at 50% 40%, #000 20%, transparent 100%);
+    opacity: .7;
+  }
+  #num {
+    position: fixed; right: -12px; top: 4%; z-index: 0;
+    font-size: clamp(180px, 30vw, 400px); font-weight: 800; letter-spacing: -.07em; line-height: 1;
+    color: transparent; -webkit-text-stroke: 1.5px color-mix(in srgb, var(--fg) 14%, transparent);
+    pointer-events: none; user-select: none; transition: opacity .5s, transform .6s cubic-bezier(.2,.8,.2,1);
+  }
+  #grain {
+    position: fixed; inset: 0; z-index: 3; pointer-events: none; opacity: .06; mix-blend-mode: multiply;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='200' height='200'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+  }
+  html.dark #grain { mix-blend-mode: screen; opacity: .05; }
+
+  #c {
+    position: fixed; inset: 0; z-index: 1; width: 100%; height: 100%; display: block;
+    touch-action: none; cursor: grab;
+  }
+  #c.hover { cursor: pointer; }
+  #c.drag { cursor: grabbing; }
+
+  /* ---------- UI chrome ---------- */
+  .ui { position: fixed; inset: 0; z-index: 5; pointer-events: none; }
+  .ui > * { pointer-events: auto; }
+
+  header {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 6;
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 28px; pointer-events: none;
+  }
+  header > * { pointer-events: auto; }
+  .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.02em; font-size: 19px; }
+  .brand .logo {
+    width: 34px; height: 34px; border-radius: 10px; background: var(--fg); position: relative; overflow: hidden;
+    box-shadow: 0 6px 16px rgba(0,0,0,.18);
+  }
+  .brand .logo::after {
+    content: ''; position: absolute; left: 7px; right: 7px; top: 8px; height: 13px; border-radius: 3px;
+    background: var(--accent); transition: background .7s;
+  }
+  .brand .logo::before {
+    content: ''; position: absolute; left: 10px; right: 10px; bottom: 5px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.35);
+  }
+  .brand .tag { font-size: 8px; padding: 6px 8px; border-radius: 6px; background: var(--fg); color: var(--bg); }
+  .status { display: flex; align-items: center; gap: 10px; }
+  .clock { font-weight: 600; font-size: 15px; letter-spacing: .02em; padding: 0 8px; font-variant-numeric: tabular-nums; }
+
+  .ib {
+    width: 42px; height: 42px; border-radius: 50%; border: 1px solid var(--glass-b);
+    background: var(--glass); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    display: grid; place-items: center; box-shadow: var(--shadow); cursor: pointer;
+    transition: transform .25s cubic-bezier(.2,.8,.2,1), background .3s;
+  }
+  .ib:hover { transform: translateY(-2px) scale(1.04); }
+  .ib:active { transform: scale(.94); }
+  .ib svg { width: 18px; height: 18px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .avatar {
+    width: 42px; height: 42px; border-radius: 50%; background: conic-gradient(from 200deg, var(--accent), #ffd166, #06d6a0, var(--accent));
+    box-shadow: var(--shadow); border: 3px solid var(--bg); position: relative;
+  }
+  .avatar::after { content: ''; position: absolute; inset: 9px; border-radius: 50%; background: var(--bg); opacity: .9; }
+
+  .nav {
+    position: fixed; top: 46%; z-index: 6; width: 56px; height: 56px; transform: translateY(-50%);
+  }
+  .nav.l { left: 24px; } .nav.r { right: 24px; }
+  .nav.dis { opacity: .3; pointer-events: none; }
+
+  /* ---------- info panel ---------- */
+  #info {
+    position: fixed; left: 36px; bottom: 104px; z-index: 6; max-width: min(560px, 82vw);
+    transition: opacity .45s, transform .55s cubic-bezier(.2,.8,.2,1);
+  }
+  .eyebrow {
+    display: flex; align-items: center; gap: 10px; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); font-weight: 600;
+  }
+  .eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
+  #title {
+    font-size: clamp(40px, 6.2vw, 80px); font-weight: 800; letter-spacing: -.04em; line-height: .95; margin: 14px 0 10px;
+  }
+  #tagline { font-size: 17px; color: var(--muted); margin: 0; font-weight: 400; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 22px; }
+  .chip {
+    padding: 7px 12px; border-radius: 999px; font-size: 13px; font-weight: 500;
+    background: var(--glass); border: 1px solid var(--glass-b); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+  }
+  .chip b { font-weight: 700; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 12px; padding: 10px 22px 10px 10px; border-radius: 999px;
+    font-weight: 600; font-size: 15px; cursor: pointer; border: 1px solid transparent;
+    transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .3s, background .5s;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:active { transform: scale(.96); }
+  .btn .key { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 9px; }
+  .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 14px 34px color-mix(in srgb, var(--accent) 42%, transparent); }
+  .btn.primary .key { background: rgba(255,255,255,.24); }
+  .btn.ghost { background: var(--glass); border-color: var(--glass-b); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .btn.ghost .key { background: var(--fg); color: var(--bg); }
+
+  .swap { animation: swap .5s cubic-bezier(.2,.7,.2,1) both; }
+  @keyframes swap { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+
+  /* ---------- rail ---------- */
+  #rail {
+    position: fixed; left: 50%; bottom: 26px; z-index: 6; transform: translateX(-50%);
+    display: flex; gap: 7px; padding: 8px; border-radius: 999px;
+    background: var(--glass); border: 1px solid var(--glass-b); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    box-shadow: var(--shadow); transition: opacity .4s, transform .5s;
+  }
+  .pill {
+    height: 26px; width: 12px; border-radius: 999px; background: var(--c); opacity: .45; border: 0; padding: 0;
+    cursor: pointer; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: flex-start;
+    transition: width .5s cubic-bezier(.2,.8,.2,1), opacity .3s, transform .3s;
+    color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
+  }
+  .pill span { opacity: 0; padding-left: 24px; transition: opacity .3s; }
+  .pill:hover { opacity: .8; }
+  .pill.on { width: 132px; opacity: 1; }
+  .pill.on span { opacity: 1; transition-delay: .15s; }
+  .pill.on::before { content: ''; position: absolute; left: 9px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: #fff; }
+
+  /* ---------- hints ---------- */
+  #hints { position: fixed; right: 34px; bottom: 34px; z-index: 6; display: flex; gap: 18px; font-size: 12px; color: var(--muted); font-weight: 500; transition: opacity .4s; }
+  #hints div { display: flex; align-items: center; gap: 7px; }
+  .kbd {
+    min-width: 22px; height: 22px; padding: 0 6px; border-radius: 7px; display: grid; place-items: center;
+    background: var(--glass); border: 1px solid var(--glass-b); font-size: 8px; color: var(--fg);
+  }
+
+  /* ---------- drawer ---------- */
+  #drawer {
+    position: fixed; right: 24px; top: 92px; bottom: 100px; z-index: 7; width: min(400px, calc(100vw - 48px));
+    background: var(--glass); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
+    border: 1px solid var(--glass-b); border-radius: 28px; box-shadow: var(--shadow); padding: 28px;
+    transform: translateX(calc(100% + 48px)); transition: transform .6s cubic-bezier(.2,.8,.2,1); overflow: auto;
+  }
+  #drawer.open { transform: none; }
+  #drawer h3 { font-size: 26px; font-weight: 800; letter-spacing: -.03em; margin: 6px 0 10px; }
+  #drawer p { color: var(--muted); font-size: 15px; line-height: 1.55; margin: 0 0 22px; }
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+  .stat { padding: 14px; border-radius: 16px; background: color-mix(in srgb, var(--fg) 5%, transparent); border: 1px solid var(--glass-b); }
+  .stat small { display: block; font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin-bottom: 6px; }
+  .stat b { font-size: 16px; font-weight: 700; }
+  .prog { height: 8px; border-radius: 99px; background: color-mix(in srgb, var(--fg) 8%, transparent); overflow: hidden; margin-top: 8px; }
+  .prog i { display: block; height: 100%; background: var(--accent); border-radius: 99px; transition: width .8s cubic-bezier(.2,.8,.2,1), background .7s; }
+  .save { display: flex; justify-content: space-between; align-items: center; padding: 12px 14px; border-radius: 14px; border: 1px dashed var(--glass-b); margin-top: 8px; font-size: 14px; }
+  .save small { color: var(--muted); }
+  .close { position: absolute; top: 18px; right: 18px; }
+
+  /* ---------- shelf mode ---------- */
+  body.shelf #info, body.shelf #num, body.shelf .nav { opacity: 0; pointer-events: none; }
+  body.shelf #info { transform: translateY(24px); }
+  #shelfbar {
+    position: fixed; left: 36px; bottom: 104px; z-index: 6; opacity: 0; transform: translateY(24px); pointer-events: none;
+    transition: opacity .45s, transform .55s cubic-bezier(.2,.8,.2,1);
+  }
+  body.shelf #shelfbar { opacity: 1; transform: none; pointer-events: auto; }
+  #shelfbar h2 { font-size: clamp(32px, 4.5vw, 56px); font-weight: 800; letter-spacing: -.04em; margin: 12px 0 6px; }
+
+  /* ---------- launching ---------- */
+  body.launching #info, body.launching #rail, body.launching #hints, body.launching .nav, body.launching header, body.launching #drawer { opacity: 0; pointer-events: none; }
+  #info, #rail, #hints, header, .nav { transition: opacity .4s; }
+
+  #flash { position: fixed; inset: 0; z-index: 60; background: #fff; opacity: 0; pointer-events: none; }
+  #flash.go { animation: flash .55s ease-out both; }
+  @keyframes flash { 0% { opacity: 1; } 100% { opacity: 0; } }
+
+  #boot {
+    position: fixed; inset: 0; z-index: 50; background: var(--accent); color: #fff; text-align: center;
+    display: grid; place-items: center; opacity: 0; pointer-events: none; transition: opacity .35s; cursor: pointer;
+  }
+  #boot.on { opacity: 1; pointer-events: auto; }
+  #boot::before { content: ''; position: absolute; inset: 0; pointer-events: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.14) 0 2px, transparent 2px 4px); }
+  #boot::after { content: ''; position: absolute; inset: 0; pointer-events: none; background: radial-gradient(80% 80% at 50% 50%, transparent 40%, rgba(0,0,0,.35)); }
+  .boot-inner { position: relative; z-index: 1; padding: 24px; }
+  #boot.on .boot-inner { animation: pop .6s cubic-bezier(.2,1.4,.3,1) both; }
+  @keyframes pop { from { transform: scale(.7); opacity: 0; } to { transform: none; opacity: 1; } }
+  .boot-logo { font-size: 11px; letter-spacing: .32em; opacity: .85; animation: blink 1.1s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: .3; } }
+  .boot-icon { font-size: 64px; margin: 26px 0 6px; filter: drop-shadow(4px 6px 0 rgba(0,0,0,.25)); }
+  .boot-title { font-size: clamp(20px, 4.4vw, 52px); margin: 18px 0 30px; line-height: 1.35; text-shadow: 5px 5px 0 rgba(0,0,0,.25); }
+  .boot-bar { width: min(440px, 70vw); height: 16px; border: 3px solid #fff; padding: 2px; margin: 0 auto; box-shadow: 5px 5px 0 rgba(0,0,0,.25); }
+  .boot-bar i { display: block; height: 100%; background: #fff; width: 0; }
+  #boot.on .boot-bar i { animation: fill 2.4s steps(24) forwards; }
+  @keyframes fill { to { width: 100%; } }
+  .boot-hint { margin-top: 36px; font-size: 9px; opacity: 0; letter-spacing: .1em; }
+  #boot.on .boot-hint { animation: fadein .5s 2.6s forwards; }
+  @keyframes fadein { to { opacity: .9; } }
+
+  /* ---------- loader ---------- */
+  #loader {
+    position: fixed; inset: 0; z-index: 70; background: var(--bg); display: grid; place-items: center;
+    transition: opacity .7s ease, visibility .7s;
+  }
+  #loader.off { opacity: 0; visibility: hidden; }
+  .cart-ico {
+    width: 84px; height: 100px; border-radius: 12px 12px 8px 8px; background: #a6a6ad; position: relative; margin: 0 auto 30px;
+    box-shadow: inset 0 -8px 0 rgba(0,0,0,.12), 0 20px 40px rgba(0,0,0,.18); animation: bob 2s ease-in-out infinite;
+  }
+  .cart-ico::before { content: ''; position: absolute; left: 12px; right: 12px; top: 22px; bottom: 26px; border-radius: 5px; background: var(--accent); transition: background .7s; }
+  .cart-ico::after { content: ''; position: absolute; left: 14px; right: 14px; top: 8px; height: 3px; border-radius: 2px; background: rgba(0,0,0,.18); box-shadow: 0 5px 0 rgba(0,0,0,.18); }
+  @keyframes bob { 50% { transform: translateY(-8px) rotate(-2deg); } }
+  .ld-title { font-size: 13px; letter-spacing: .3em; margin-bottom: 14px; }
+  .ld-status { font-size: 13px; color: var(--muted); margin-bottom: 18px; min-height: 18px; }
+  .ld-bar { width: 220px; height: 6px; border-radius: 99px; background: color-mix(in srgb, var(--fg) 10%, transparent); margin: 0 auto; overflow: hidden; }
+  .ld-bar i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 99px; transition: width .4s; }
+
+  @media (max-width: 760px) {
+    #hints, #num { display: none; }
+    #info { left: 20px; bottom: 96px; }
+    .nav { display: none; }
+    header { padding: 16px 18px; }
+    .clock { display: none; }
+    #drawer { right: 12px; top: 80px; bottom: 90px; }
+    .pill.on { width: 100px; }
+    #shelfbar { left: 20px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="wash"></div>
+<div id="grid"></div>
+<div id="num">01</div>
+<canvas id="c"></canvas>
+<div id="grain"></div>
+
+<header>
+  <div class="brand">
+    <div class="logo"></div>
+    <span>Cartridge</span>
+    <span class="tag pix">OS</span>
+  </div>
+  <div class="status">
+    <span class="clock" id="clock">--:--</span>
+    <button class="ib" id="btnShelf" title="Shelf view (X)">
+      <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><rect x="14" y="14" width="7" height="7" rx="2"/></svg>
+    </button>
+    <button class="ib" id="btnSound" title="Sound (M)">
+      <svg viewBox="0 0 24 24" id="icoSound"><path d="M4 9v6h4l5 4V5L8 9H4z"/><path d="M16 9a4 4 0 0 1 0 6"/><path d="M18.5 6.5a8 8 0 0 1 0 11"/></svg>
+    </button>
+    <button class="ib" id="btnTheme" title="Theme (T)">
+      <svg viewBox="0 0 24 24"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/></svg>
+    </button>
+    <div class="avatar" title="Player 1"></div>
+  </div>
+</header>
+
+<div class="ui">
+  <button class="ib nav l" id="navL" title="Previous">
+    <svg viewBox="0 0 24 24"><path d="M15 5l-7 7 7 7"/></svg>
+  </button>
+  <button class="ib nav r" id="navR" title="Next">
+    <svg viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>
+  </button>
+
+  <section id="info">
+    <div class="eyebrow"><span class="dot"></span><span id="eyebrow">Now selected · 01 / 12</span></div>
+    <h1 id="title">Neon Kart</h1>
+    <p id="tagline">Drift through the midnight grid.</p>
+    <div class="chips" id="chips"></div>
+    <div class="actions">
+      <button class="btn primary" id="btnPlay"><span class="key pix">A</span>Play</button>
+      <button class="btn ghost" id="btnDetails"><span class="key pix">Y</span>Details</button>
+    </div>
+  </section>
+
+  <section id="shelfbar">
+    <div class="eyebrow"><span class="dot"></span><span>The Shelf · 12 cartridges</span></div>
+    <h2>Pick a cartridge</h2>
+    <p id="tagline" style="color:var(--muted);margin:0">Click one to pull it into the flow. <span class="kbd pix" style="display:inline-grid;vertical-align:middle">B</span> to go back.</p>
+  </section>
+
+  <nav id="rail" aria-label="Games"></nav>
+
+  <div id="hints">
+    <div><span class="kbd">◀</span><span class="kbd">▶</span> Browse</div>
+    <div><span class="kbd pix">A</span> Play</div>
+    <div><span class="kbd pix">Y</span> Details</div>
+    <div><span class="kbd pix">X</span> Shelf</div>
+  </div>
+
+  <aside id="drawer">
+    <button class="ib close" id="btnClose" title="Close (B)">
+      <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+    <div class="eyebrow"><span class="dot"></span><span id="dGenre">Racing</span></div>
+    <h3 id="dTitle">Neon Kart</h3>
+    <p id="dDesc"></p>
+    <div class="stats">
+      <div class="stat"><small>Developer</small><b id="dDev"></b></div>
+      <div class="stat"><small>Released</small><b id="dYear"></b></div>
+      <div class="stat"><small>Rating</small><b id="dRating"></b></div>
+      <div class="stat"><small>Play time</small><b id="dHours"></b></div>
+    </div>
+    <div class="stat">
+      <small>Completion</small><b id="dPct"></b>
+      <div class="prog"><i id="dProg"></i></div>
+    </div>
+    <div class="save"><span>Slot 1 · <b id="dSave"></b></span><small>Auto‑save</small></div>
+    <div class="save"><span>Slot 2 · Empty</span><small>-</small></div>
+  </aside>
+</div>
+
+<div id="flash"></div>
+<div id="boot">
+  <div class="boot-inner pix">
+    <div class="boot-logo">CARTRIDGE OS</div>
+    <div class="boot-icon" id="bootIcon">🏎</div>
+    <div class="boot-title" id="bootTitle">NEON KART</div>
+    <div class="boot-bar"><i></i></div>
+    <div class="boot-hint">PRESS B OR CLICK TO EJECT</div>
+  </div>
+</div>
+
+<div id="loader">
+  <div style="text-align:center">
+    <div class="cart-ico"></div>
+    <div class="ld-title pix">CARTRIDGE OS</div>
+    <div class="ld-status" id="ldStatus">Warming up…</div>
+    <div class="ld-bar"><i id="ldBar"></i></div>
+  </div>
+</div>
+
+<script type="module">
+import * as THREE from "three";
+import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
+import { upgradeSticker } from "./js/covers.js";
+
+/* ------------------------------------------------------------------ */
+/*  Assets - local build, models ship with the branch                */
+/* ------------------------------------------------------------------ */
+const CDN = "./public/3d";
+const MODEL_URL = `${CDN}/model.glb`;
+const DIFFUSE_URL = `${CDN}/diffuse.webp`;
+const NORMAL_URL = `${CDN}/normal.webp`;
+const ROUGHNESS_URL = `${CDN}/roughness.webp`;
+/* Face-first yaw measured from the GLB (sticker faces -Z). */
+const GLB_FACE_YAW = 3.02;
+
+const GAMES = [
+  { title: "Neon Kart", tag: "Drift through the midnight grid.", genre: "Racing", year: 1994, players: "1-4", color: "#E52521", icon: "🏎", dev: "Kaminari Works", rating: "4.8", hours: "12h 40m", pct: 64, save: "Rainbow Overpass",
+    desc: "Sixteen tracks of neon asphalt, four-player split screen and the infamous Rainbow Overpass. Hold drift, chain the boost, don't look down." },
+  { title: "Verdant Quest", tag: "A sprout, a sword, a sleeping kingdom.", genre: "Adventure", year: 1991, players: "1", color: "#1B8A2A", icon: "🗡", dev: "Hollowbrook", rating: "4.9", hours: "31h 05m", pct: 82, save: "Hollow Spire",
+    desc: "Wake the forest spirits, forge the Thornblade and climb Hollow Spire. A top-down adventure with eight dungeons and a very good dog." },
+  { title: "Star Drifter", tag: "Outrun the collapsing sun.", genre: "Shooter", year: 1993, players: "1-2", color: "#E0B000", icon: "🚀", dev: "Solstice Labs", rating: "4.5", hours: "6h 12m", pct: 40, save: "Sector 7",
+    desc: "A vertical shooter about outrunning a dying star. Weave through debris fields, charge the Nova cannon and bank your multiplier before the light catches up." },
+  { title: "Deep Blue Bay", tag: "Every tide rewrites the board.", genre: "Puzzle", year: 1995, players: "1", color: "#4169E1", icon: "🐚", dev: "Tidepool", rating: "4.6", hours: "9h 48m", pct: 55, save: "Stage 41",
+    desc: "Tide-based match puzzles. Every ninety seconds the water rises, shifting your board. Calm, clever and quietly ruthless." },
+  { title: "Ghost Arcade", tag: "Haunt the high score.", genre: "Platformer", year: 1990, players: "1", color: "#7B3FE4", icon: "👾", dev: "Phantom Cabinet", rating: "4.7", hours: "4h 30m", pct: 28, save: "Cabinet 3",
+    desc: "You're the ghost now. Possess cabinets in a haunted arcade, hijack their rules and float toward the high-score table in this genre-hopping platformer." },
+  { title: "Turbo Fists", tag: "Sixteen legends. One belt.", genre: "Fighting", year: 1996, players: "1-2", color: "#F26B1D", icon: "🥊", dev: "Ironjaw Games", rating: "4.4", hours: "18h 20m", pct: 71, save: "Arcade Ladder",
+    desc: "Sixteen fighters, one belt. Tight inputs, huge sprites and a training mode that actually teaches you frame data." },
+  { title: "Coral Kingdom", tag: "Sing the reef back to life.", genre: "RPG", year: 1997, players: "1", color: "#0FA3A3", icon: "🐠", dev: "Reefsong", rating: "4.9", hours: "44h 10m", pct: 93, save: "Pearl Throne",
+    desc: "A song-driven RPG under the sea. Learn melodies from creatures, remix them in battle and sing a bleached reef back to color." },
+  { title: "Bubble Pop Pro", tag: "Chain it. Pop it. Again.", genre: "Arcade", year: 1992, players: "1-2", color: "#E84393", icon: "🫧", dev: "Popcraft", rating: "4.3", hours: "7h 05m", pct: 47, save: "Puzzle 112",
+    desc: "The chain-reaction arcade classic, remastered. Endless, versus and a 200-stage puzzle mode with a devious final boss." },
+  { title: "Mecha Moth", tag: "Steel wings over a paper city.", genre: "Action", year: 1994, players: "1", color: "#2B3A8F", icon: "🦋", dev: "Origami Steel", rating: "4.6", hours: "5h 55m", pct: 36, save: "Fold IV",
+    desc: "Pilot a paper-thin mech over an origami city. Fold, unfold and burn bright in this side-scrolling action showcase." },
+  { title: "Slime Golf", tag: "Par is a suggestion.", genre: "Sports", year: 1998, players: "1-4", color: "#7CB518", icon: "⛳", dev: "Goo Sports Inc.", rating: "4.2", hours: "10h 15m", pct: 60, save: "Squish Links",
+    desc: "Golf, except the ball is alive and the course hates you. Four-player chaos with sixty holes across five squishy worlds." },
+  { title: "Dust Rally '89", tag: "No brakes past the canyon.", genre: "Racing", year: 1989, players: "1", color: "#8B5A2B", icon: "🏜", dev: "Canyon Byte", rating: "4.1", hours: "3h 40m", pct: 22, save: "Stage 6",
+    desc: "Point-to-point rallying across canyon country with no rewinds and no brakes worth mentioning. Your co-driver is always right." },
+  { title: "Void Runner", tag: "Light is your only weapon.", genre: "Shooter", year: 1999, players: "1-2", color: "#3A3A44", icon: "🌑", dev: "Nullspace", rating: "4.7", hours: "8h 00m", pct: 51, save: "Depth 9",
+    desc: "A near-silent shooter set in absolute dark. Your shots are the only light - spend them wisely and read the void." },
+];
+const COLS = 4;
+
+/* ------------------------------------------------------------------ */
+/*  DOM                                                                */
+/* ------------------------------------------------------------------ */
+const $ = (s) => document.querySelector(s);
+const canvas = $('#c');
+const els = {
+  title: $('#title'), tagline: $('#tagline'), chips: $('#chips'), eyebrow: $('#eyebrow'), num: $('#num'),
+  rail: $('#rail'), drawer: $('#drawer'), boot: $('#boot'), flash: $('#flash'), loader: $('#loader'),
+  ldStatus: $('#ldStatus'), ldBar: $('#ldBar'), navL: $('#navL'), navR: $('#navR'),
+};
+
+/* ------------------------------------------------------------------ */
+/*  Audio - tiny chiptune UI                                          */
+/* ------------------------------------------------------------------ */
+let ac = null, muted = localStorage.getItem('cos-muted') === '1';
+function ensureAudio() {
+  if (!ac) { try { ac = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) {} }
+  if (ac && ac.state === 'suspended') ac.resume();
+}
+function tone(f, d = 0.06, type = 'square', g = 0.035, when = 0) {
+  if (!ac || muted) return;
+  const t = ac.currentTime + when;
+  const o = ac.createOscillator(), gn = ac.createGain();
+  o.type = type; o.frequency.setValueAtTime(f, t);
+  gn.gain.setValueAtTime(0.0001, t);
+  gn.gain.exponentialRampToValueAtTime(g, t + 0.008);
+  gn.gain.exponentialRampToValueAtTime(0.0001, t + d);
+  o.connect(gn); gn.connect(ac.destination);
+  o.start(t); o.stop(t + d + 0.02);
+}
+const sfx = {
+  tick: () => tone(1180, 0.045, 'square', 0.022),
+  bump: () => tone(180, 0.08, 'triangle', 0.05),
+  select: () => { tone(660, 0.07); tone(990, 0.09, 'square', 0.03, 0.06); },
+  back: () => { tone(520, 0.08, 'triangle', 0.04); tone(390, 0.1, 'triangle', 0.04, 0.07); },
+  mode: () => { tone(440, 0.05, 'triangle', 0.04); tone(880, 0.08, 'triangle', 0.04, 0.05); },
+  launch: () => [523, 659, 784, 1047].forEach((f, i) => tone(f, 0.18, 'square', 0.04, i * 0.09)),
+};
+
+/* ------------------------------------------------------------------ */
+/*  Renderer / scene                                                   */
+/* ------------------------------------------------------------------ */
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.05;
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+scene.environmentIntensity = 0.5;
+
+const camera = new THREE.PerspectiveCamera(34, 1, 0.1, 100);
+camera.position.set(0, 0.5, 10);
+
+scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+const key = new THREE.DirectionalLight(0xffffff, 2.2);
+key.position.set(5, 8, 6);
+scene.add(key);
+const rim = new THREE.DirectionalLight(0xc8d4ff, 0.8);
+rim.position.set(-6, 3, -4);
+scene.add(rim);
+
+/* ------------------------------------------------------------------ */
+/*  Texture helpers                                                    */
+/* ------------------------------------------------------------------ */
+async function loadTexture(url, srgb) {
+  const tex = await new THREE.TextureLoader().loadAsync(url);
+  tex.flipY = false;                                  // the model's UVs expect unflipped textures
+  if (srgb) tex.colorSpace = THREE.SRGBColorSpace;    // color maps only
+  tex.anisotropy = 8;
+  return tex;
+}
+
+function makeShadowTex() {
+  const c = document.createElement('canvas'); c.width = c.height = 128;
+  const x = c.getContext('2d');
+  const g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+  g.addColorStop(0, 'rgba(0,0,0,0.6)'); g.addColorStop(0.5, 'rgba(0,0,0,0.18)'); g.addColorStop(1, 'rgba(0,0,0,0)');
+  x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+  return new THREE.CanvasTexture(c);
+}
+const shadowTex = makeShadowTex();
+
+function wrapText(x, text, maxW) {
+  const words = text.split(' '), lines = []; let line = '';
+  for (const w of words) {
+    const test = line ? line + ' ' + w : w;
+    if (x.measureText(test).width > maxW && line) { lines.push(line); line = w; } else line = test;
+  }
+  if (line) lines.push(line);
+  return lines;
+}
+
+/* Sticker art. `withText` only for the procedural fallback where UV
+   orientation is known; the GLB sticker gets an orientation-agnostic pattern. */
+function makeLabelTex(game, withText, unflipped) {
+  const c = document.createElement('canvas'); c.width = c.height = 512;
+  const x = c.getContext('2d');
+  x.fillStyle = game.color; x.fillRect(0, 0, 512, 512);
+  const gr = x.createLinearGradient(0, 0, 512, 512);
+  gr.addColorStop(0, 'rgba(255,255,255,.26)'); gr.addColorStop(.5, 'rgba(255,255,255,0)'); gr.addColorStop(1, 'rgba(0,0,0,.2)');
+  x.fillStyle = gr; x.fillRect(0, 0, 512, 512);
+  x.fillStyle = 'rgba(255,255,255,.12)';
+  for (let i = 0; i < 12; i++) for (let j = 0; j < 12; j++) { x.beginPath(); x.arc(25 + i * 42, 25 + j * 42, 3, 0, 7); x.fill(); }
+  x.strokeStyle = 'rgba(255,255,255,.6)'; x.lineWidth = 6; x.strokeRect(22, 22, 468, 468);
+  if (withText) {
+    x.textAlign = 'center'; x.textBaseline = 'middle';
+    x.font = '150px serif'; x.fillText(game.icon, 256, 190);
+    x.fillStyle = '#fff'; x.font = '800 46px Outfit, system-ui, sans-serif';
+    const lines = wrapText(x, game.title.toUpperCase(), 400);
+    lines.forEach((l, i) => x.fillText(l, 256, 330 + i * 52 - (lines.length - 1) * 26));
+    x.fillStyle = 'rgba(255,255,255,.8)'; x.font = '600 20px Outfit, system-ui, sans-serif';
+    x.fillText(`${game.genre.toUpperCase()}  ·  ${game.year}`, 256, 446);
+  }
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = 8; t.flipY = !unflipped; t.needsUpdate = true;
+  return t;
+}
+
+/* ------------------------------------------------------------------ */
+/*  Asset loading (GLB from CDN, procedural fallback)                  */
+/* ------------------------------------------------------------------ */
+const setStatus = (s) => els.ldStatus.textContent = s;
+const setProgress = (p) => els.ldBar.style.width = `${Math.round(p * 100)}%`;
+
+async function loadAssets() {
+  setStatus('Fetching cartridge model…'); setProgress(0.08);
+  const timeout = (ms) => new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
+  try {
+    const gltf = await Promise.race([
+      new GLTFLoader().loadAsync(MODEL_URL, (e) => { if (e.total) setProgress(0.08 + (e.loaded / e.total) * 0.6); }),
+      timeout(20000),
+    ]);
+    setStatus('Applying plastic finish…'); setProgress(0.75);
+    const [map, normalMap, roughnessMap] = await Promise.all([
+      loadTexture(DIFFUSE_URL, true), loadTexture(NORMAL_URL, false), loadTexture(ROUGHNESS_URL, false),
+    ].map((p) => p.catch(() => null)));
+
+    /* One shared plastic body for every tile. Plastic is never metal. */
+    const bodyMat = new THREE.MeshStandardMaterial({
+      color: map ? 0xffffff : 0xa0a0a6, map, normalMap, roughnessMap, roughness: 0.75, metalness: 0,
+    });
+
+    /* Center + normalize to the same height regardless of raw units. */
+    const box = new THREE.Box3().setFromObject(gltf.scene);
+    const size = new THREE.Vector3(), center = new THREE.Vector3();
+    box.getSize(size); box.getCenter(center);
+    const scale = 2.8 / Math.max(size.y, 0.001);
+    gltf.scene.position.sub(center);
+    const inner = new THREE.Group(); inner.add(gltf.scene); inner.scale.setScalar(scale);
+    const template = new THREE.Group(); template.add(inner);
+    return { template, bodyMat, faceYaw: GLB_FACE_YAW, real: true };
+  } catch (err) {
+    console.warn('[Cartridge OS] GLB unavailable, using procedural cartridge.', err);
+    setStatus('Molding backup cartridges…'); setProgress(0.8);
+    try { await document.fonts.load('800 46px Outfit'); } catch (e) {}
+    return { template: null, bodyMat: null, faceYaw: 0, real: false };
+  }
+}
+
+function buildProcedural(game) {
+  const g = new THREE.Group();
+  const bodyMat = new THREE.MeshStandardMaterial({ color: 0xa4a4ab, roughness: 0.6, metalness: 0 });
+  const body = new THREE.Mesh(new RoundedBoxGeometry(2.3, 2.8, 0.5, 4, 0.1), bodyMat);
+  body.name = 'model_2'; g.add(body);
+  const ridgeMat = new THREE.MeshStandardMaterial({ color: 0x8c8c93, roughness: 0.7 });
+  for (let k = 0; k < 4; k++) {
+    const r = new THREE.Mesh(new THREE.BoxGeometry(2.0, 0.04, 0.54), ridgeMat);
+    r.position.set(0, 1.02 + k * 0.09, 0); g.add(r);
+  }
+  const lab = new THREE.Mesh(new THREE.PlaneGeometry(1.78, 1.86),
+    new THREE.MeshStandardMaterial({ map: makeLabelTex(game, true, false), roughness: 0.45, metalness: 0 }));
+  lab.name = 'boxart'; lab.position.set(0, -0.08, 0.2505); g.add(lab);
+  const con = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.3, 0.28), new THREE.MeshStandardMaterial({ color: 0x2a2a30, roughness: 0.5 }));
+  con.position.set(0, -1.44, 0); g.add(con);
+  return g;
+}
+
+/* ------------------------------------------------------------------ */
+/*  State                                                              */
+/* ------------------------------------------------------------------ */
+const state = { selected: 0, mode: 'flow', hovered: -1, launch: null, drawer: false, faceYaw: 0 };
+const carts = [], pivots = [];
+const mouseT = new THREE.Vector2(), mouse = new THREE.Vector2(), ndc = new THREE.Vector2();
+const raycaster = new THREE.Raycaster();
+const damp = THREE.MathUtils.damp;
+const easeOut = (p) => 1 - Math.pow(1 - p, 3), easeIn = (p) => p * p * p;
+
+function buildCart(game, i, assets) {
+  const holder = new THREE.Group(), pivot = new THREE.Group();
+  holder.add(pivot);
+  let model;
+  if (assets.template) {
+    model = assets.template.clone(true);
+    const labelMat = new THREE.MeshStandardMaterial({ map: makeLabelTex(game, false, true), roughness: 0.5, metalness: 0 });
+    upgradeSticker(labelMat, game.title);
+    /* Mesh names come from the GLB: "model_2" = shell, "boxart" = sticker. */
+    model.traverse((ch) => {
+      if (ch.isMesh) {
+        if (ch.name === 'model_2') ch.material = assets.bodyMat;
+        else if (ch.name === 'boxart') ch.material = labelMat;
+      }
+    });
+  } else model = buildProcedural(game);
+  pivot.add(model);
+  pivot.traverse((o) => (o.userData.idx = i));
+
+  const shadowMat = new THREE.MeshBasicMaterial({ map: shadowTex, transparent: true, depthWrite: false, opacity: 0 });
+  const sh = new THREE.Mesh(new THREE.PlaneGeometry(3.4, 1.7), shadowMat);
+  sh.rotation.x = -Math.PI / 2; sh.position.y = -1.52; sh.renderOrder = -1;
+  holder.add(sh);
+
+  scene.add(holder);
+  pivots.push(pivot);
+  const cart = { holder, pivot, shadowMat, idx: i, cur: { x: 0, y: -9 - Math.abs(i - state.selected) * 1.1, z: 0, s: 0.8 } };
+  carts.push(cart);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Layout targets                                                     */
+/* ------------------------------------------------------------------ */
+function targetFor(i, t, now) {
+  const sel = state.selected, hov = i === state.hovered;
+  if (state.mode === 'shelf') {
+    const col = i % COLS, row = Math.floor(i / COLS), isSel = i === sel;
+    return {
+      x: (col - (COLS - 1) / 2) * 3.1, y: ((GAMES.length / COLS - 1) / 2 - row) * 3.4 + 0.3,
+      z: isSel ? 1.1 : hov ? 0.5 : 0, ry: ((i % 3) - 1) * 0.12 + (isSel ? Math.sin(t * 1.2) * 0.08 : 0), rx: 0,
+      s: isSel ? 1.04 : 1, sh: isSel ? 0.7 : 0.35, vis: true, L: 6,
+    };
+  }
+  const k = i - sel, a = Math.abs(k), s = Math.sign(k);
+  if (k === 0) {
+    const tg = { x: 0, y: 0.45, z: 1.2, ry: mouse.x * 0.24 + Math.sin(t * 0.9) * 0.05, rx: -mouse.y * 0.12, s: 1, sh: 0.85, vis: true, L: 6.5 };
+    if (state.launch) {
+      const e = (now - state.launch.t0) / 1000;
+      tg.L = 16;
+      if (e < 0.35) { const p = e / 0.35; tg.y = 0.45 + easeOut(p) * 0.9; tg.s = 1 + p * 0.12; tg.rx = -p * 0.35; tg.ry = 0; }
+      else { const p = Math.min(1, (e - 0.35) / 0.45); tg.y = 1.35 - easeIn(p) * 10; tg.rx = -0.35 - p * 1.3; tg.s = 1.12 - p * 0.3; tg.sh = 0; tg.ry = 0; }
+    }
+    return tg;
+  }
+  return {
+    x: s * (2.8 + (a - 1) * 1.6), y: 0.15, z: -0.5 - a * 0.6, ry: -s * 0.66, rx: 0,
+    s: hov ? 0.95 : 0.9, sh: 0.42 / (1 + a * 0.5), vis: a < 7, L: 6.5,
+  };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Camera                                                             */
+/* ------------------------------------------------------------------ */
+const camCur = new THREE.Vector3(0, 0.55, 10), lookCur = new THREE.Vector3(0, -0.35, 0);
+const camTgt = new THREE.Vector3(), lookTgt = new THREE.Vector3();
+function updateCamera(dt) {
+  if (state.mode === 'shelf') { camTgt.set(mouse.x * 0.6, 0.3 + mouse.y * 0.35, 17); lookTgt.set(0, 0.3, 0); }
+  else { camTgt.set(mouse.x * 0.45, 0.55 + mouse.y * 0.3, 10); lookTgt.set(state.drawer && innerWidth > 900 ? 1.7 : 0, -0.35, 0); }
+  if (state.launch) { camTgt.z = 9.2; }
+  camCur.x = damp(camCur.x, camTgt.x, 4, dt); camCur.y = damp(camCur.y, camTgt.y, 4, dt); camCur.z = damp(camCur.z, camTgt.z, 3.5, dt);
+  lookCur.x = damp(lookCur.x, lookTgt.x, 4, dt); lookCur.y = damp(lookCur.y, lookTgt.y, 4, dt);
+  camera.position.copy(camCur); camera.lookAt(lookCur);
+}
+
+/* ------------------------------------------------------------------ */
+/*  Loop                                                               */
+/* ------------------------------------------------------------------ */
+const clock = new THREE.Clock();
+function loop() {
+  const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime, now = performance.now();
+  mouse.x = damp(mouse.x, mouseT.x, 5, dt); mouse.y = damp(mouse.y, mouseT.y, 5, dt);
+
+  for (const c of carts) {
+    const tg = targetFor(c.idx, t, now), L = tg.L;
+    c.cur.x = damp(c.cur.x, tg.x, L, dt); c.cur.y = damp(c.cur.y, tg.y, L, dt);
+    c.cur.z = damp(c.cur.z, tg.z, L, dt); c.cur.s = damp(c.cur.s, tg.s, L, dt);
+    c.holder.position.set(c.cur.x, c.cur.y, c.cur.z); c.holder.scale.setScalar(c.cur.s);
+    c.pivot.rotation.y = damp(c.pivot.rotation.y, state.faceYaw + tg.ry, L, dt);
+    c.pivot.rotation.x = damp(c.pivot.rotation.x, tg.rx, L, dt);
+    const sel = c.idx === state.selected && state.mode === 'flow' && !state.launch;
+    c.pivot.position.y = damp(c.pivot.position.y, sel ? Math.sin(t * 1.7) * 0.07 : 0, 6, dt);
+    c.shadowMat.opacity = damp(c.shadowMat.opacity, tg.sh, L, dt);
+    c.holder.visible = tg.vis;
+  }
+  updateCamera(dt);
+  renderer.render(scene, camera);
+}
+
+function fit() {
+  const w = canvas.clientWidth, h = canvas.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+addEventListener('resize', fit);
+
+/* ------------------------------------------------------------------ */
+/*  UI                                                                 */
+/* ------------------------------------------------------------------ */
+function retrigger(el) { el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap'); }
+
+function buildRail() {
+  GAMES.forEach((g, i) => {
+    const b = document.createElement('button');
+    b.className = 'pill'; b.style.setProperty('--c', g.color); b.title = g.title;
+    b.innerHTML = `<span>${g.title}</span>`;
+    b.addEventListener('click', () => { ensureAudio(); if (state.mode === 'shelf') setMode('flow'); select(i); });
+    els.rail.appendChild(b);
+  });
+}
+
+function updateUI(animate = true) {
+  const g = GAMES[state.selected], n = String(state.selected + 1).padStart(2, '0');
+  document.documentElement.style.setProperty('--accent', g.color);
+  els.title.textContent = g.title;
+  els.tagline.textContent = g.tag;
+  els.eyebrow.textContent = `Now selected · ${n} / ${GAMES.length} · ${g.genre}`;
+  els.chips.innerHTML = `<span class="chip">${g.genre}</span><span class="chip"><b>${g.year}</b></span><span class="chip">${g.players} Player${g.players === '1' ? '' : 's'}</span><span class="chip">★ ${g.rating}</span>`;
+  els.num.textContent = n;
+  if (animate) { retrigger(els.title); retrigger(els.tagline); retrigger(els.chips); els.num.style.transform = 'translateY(-10px)'; setTimeout(() => els.num.style.transform = '', 50); }
+  [...els.rail.children].forEach((p, i) => p.classList.toggle('on', i === state.selected));
+  els.navL.classList.toggle('dis', state.selected === 0);
+  els.navR.classList.toggle('dis', state.selected === GAMES.length - 1);
+  // drawer
+  $('#dGenre').textContent = `${g.genre} · ${g.players}P`;
+  $('#dTitle').textContent = g.title; $('#dDesc').textContent = g.desc;
+  $('#dDev').textContent = g.dev; $('#dYear').textContent = g.year; $('#dRating').textContent = `★ ${g.rating} / 5`;
+  $('#dHours').textContent = g.hours; $('#dPct').textContent = `${g.pct}%`; $('#dProg').style.width = `${g.pct}%`;
+  $('#dSave').textContent = g.save;
+  // boot
+  $('#bootTitle').textContent = g.title.toUpperCase(); $('#bootIcon').textContent = g.icon;
+}
+
+function select(i, { sound = true } = {}) {
+  const clamped = Math.max(0, Math.min(GAMES.length - 1, i));
+  if (clamped !== i) { if (sound) sfx.bump(); return; }
+  if (i === state.selected) return;
+  state.selected = i;
+  if (sound) sfx.tick();
+  updateUI();
+}
+const step = (d) => select(state.selected + d);
+
+function setMode(m) {
+  if (state.mode === m) return;
+  state.mode = m;
+  document.body.classList.toggle('shelf', m === 'shelf');
+  if (m === 'shelf') setDrawer(false);
+  sfx.mode();
+}
+function setDrawer(open) {
+  if (state.drawer === open) return;
+  state.drawer = open;
+  els.drawer.classList.toggle('open', open);
+  open ? sfx.select() : sfx.back();
+}
+
+function launch() {
+  if (state.launch || state.mode !== 'flow') return;
+  setDrawer(false);
+  state.launch = { t0: performance.now() };
+  sfx.launch();
+  document.body.classList.add('launching');
+  setTimeout(() => {
+    if (!state.launch) return;
+    els.flash.classList.remove('go'); void els.flash.offsetWidth; els.flash.classList.add('go');
+    els.boot.classList.add('on');
+    tone(1568, 0.25, 'square', 0.03, 0.05);
+  }, 760);
+}
+function endLaunch() {
+  if (!state.launch) return;
+  state.launch = null;
+  els.boot.classList.remove('on');
+  document.body.classList.remove('launching');
+  const c = carts[state.selected];
+  c.cur.y = 7.5; c.cur.s = 0.9; c.pivot.rotation.x = 0.5;   // eject: drop back in from the top
+  sfx.back();
+}
+
+function toggleMute() {
+  muted = !muted; localStorage.setItem('cos-muted', muted ? '1' : '0');
+  $('#btnSound').style.opacity = muted ? .45 : 1;
+  if (!muted) sfx.tick();
+}
+function toggleTheme() {
+  const dark = document.documentElement.classList.toggle('dark');
+  localStorage.setItem('cos-theme', dark ? 'dark' : 'light');
+  renderer.toneMappingExposure = dark ? 1.15 : 1.05;
+  sfx.mode();
+}
+if (localStorage.getItem('cos-theme') === 'dark') { document.documentElement.classList.add('dark'); renderer.toneMappingExposure = 1.15; }
+$('#btnSound').style.opacity = muted ? .45 : 1;
+
+/* ------------------------------------------------------------------ */
+/*  Input                                                              */
+/* ------------------------------------------------------------------ */
+function pickHover() {
+  raycaster.setFromCamera(ndc, camera);
+  const hit = raycaster.intersectObjects(pivots, true)[0];
+  const idx = hit ? hit.object.userData.idx : -1;
+  if (idx !== state.hovered) {
+    state.hovered = idx;
+    canvas.classList.toggle('hover', idx >= 0);
+    if (idx >= 0 && state.mode === 'shelf') tone(1500, 0.03, 'square', 0.012);
+  }
+}
+
+let pd = null, lastX = 0, dragAcc = 0;
+canvas.addEventListener('pointerdown', (e) => {
+  ensureAudio();
+  pd = { x: e.clientX, y: e.clientY, moved: false }; lastX = e.clientX; dragAcc = 0;
+  canvas.setPointerCapture(e.pointerId); canvas.classList.add('drag');
+});
+canvas.addEventListener('pointermove', (e) => {
+  ndc.set((e.clientX / innerWidth) * 2 - 1, -((e.clientY / innerHeight) * 2 - 1));
+  mouseT.copy(ndc);
+  if (pd) {
+    if (Math.abs(e.clientX - pd.x) > 6 || Math.abs(e.clientY - pd.y) > 6) pd.moved = true;
+    if (state.mode === 'flow' && !state.launch) {
+      dragAcc += e.clientX - lastX;
+      if (Math.abs(dragAcc) > 90) { step(dragAcc < 0 ? 1 : -1); dragAcc = 0; }
+    }
+    lastX = e.clientX;
+  } else if (!state.launch) pickHover();
+});
+canvas.addEventListener('pointerup', (e) => {
+  canvas.classList.remove('drag');
+  if (pd && !pd.moved && !state.launch) {
+    pickHover();
+    const h = state.hovered;
+    if (h >= 0) {
+      if (state.mode === 'shelf') { select(h, { sound: false }); setMode('flow'); sfx.select(); }
+      else if (h === state.selected) launch();
+      else select(h);
+    } else if (state.drawer) setDrawer(false);
+  }
+  pd = null;
+});
+canvas.addEventListener('pointerleave', () => { mouseT.set(0, 0); });
+
+let wheelAcc = 0, wheelLock = 0;
+addEventListener('wheel', (e) => {
+  if (state.launch || e.target.closest('#drawer')) return;
+  const now = performance.now(); if (now < wheelLock) return;
+  wheelAcc += Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+  if (Math.abs(wheelAcc) > 40) { step(wheelAcc > 0 ? 1 : -1); wheelAcc = 0; wheelLock = now + 320; }
+}, { passive: true });
+
+addEventListener('keydown', (e) => {
+  ensureAudio();
+  const k = e.key.toLowerCase();
+  if (state.launch) { if (k === 'escape' || k === 'b' || k === 'enter' || k === ' ') endLaunch(); return; }
+  switch (k) {
+    case 'arrowright': step(1); break;
+    case 'arrowleft': step(-1); break;
+    case 'arrowdown': if (state.mode === 'shelf') step(COLS); else setDrawer(true); e.preventDefault(); break;
+    case 'arrowup': if (state.mode === 'shelf') step(-COLS); else setDrawer(false); e.preventDefault(); break;
+    case 'enter': case ' ': case 'a':
+      e.preventDefault();
+      if (state.mode === 'shelf') { setMode('flow'); sfx.select(); } else launch();
+      break;
+    case 'escape': case 'b':
+      if (state.drawer) setDrawer(false); else if (state.mode === 'shelf') setMode('flow'); else sfx.back();
+      break;
+    case 'x': case 'tab': e.preventDefault(); setMode(state.mode === 'flow' ? 'shelf' : 'flow'); break;
+    case 'y': setDrawer(!state.drawer); break;
+    case 'm': toggleMute(); break;
+    case 't': toggleTheme(); break;
+  }
+});
+
+els.navL.addEventListener('click', () => { ensureAudio(); step(-1); });
+els.navR.addEventListener('click', () => { ensureAudio(); step(1); });
+$('#btnPlay').addEventListener('click', () => { ensureAudio(); launch(); });
+$('#btnDetails').addEventListener('click', () => { ensureAudio(); setDrawer(!state.drawer); });
+$('#btnClose').addEventListener('click', () => setDrawer(false));
+$('#btnShelf').addEventListener('click', () => { ensureAudio(); setMode(state.mode === 'flow' ? 'shelf' : 'flow'); });
+$('#btnSound').addEventListener('click', () => { ensureAudio(); toggleMute(); });
+$('#btnTheme').addEventListener('click', () => { ensureAudio(); toggleTheme(); });
+els.boot.addEventListener('click', endLaunch);
+
+/* clock */
+const tick = () => { const d = new Date(); $('#clock').textContent = d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }); };
+tick(); setInterval(tick, 1000);
+
+/* ------------------------------------------------------------------ */
+/*  Boot                                                               */
+/* ------------------------------------------------------------------ */
+async function main() {
+  buildRail();
+  updateUI(false);
+  fit();
+  const assets = await loadAssets();
+  state.faceYaw = assets.faceYaw;
+  GAMES.forEach((g, i) => buildCart(g, i, assets));
+  carts.forEach((c) => { c.pivot.rotation.y = state.faceYaw; });
+  setStatus(assets.real ? 'Cartridges polished. Ready.' : 'Backup cartridges ready.'); setProgress(1);
+  fit();
+  renderer.setAnimationLoop(loop);
+  setTimeout(() => els.loader.classList.add('off'), 450);
+}
+main().catch((err) => { console.error(err); setStatus('Something went wrong booting the launcher.'); });
+</script>
+</body>
+</html>
