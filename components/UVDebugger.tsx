@@ -547,63 +547,6 @@ export const UVDebugger: React.FC = () => {
                     </div>
                 </SideSection>
 
-                {/* ScreenScraper - Boxart Fetcher */}
-                <SideSection label="Database Sync" badge="api interface">
-                    {scrapedLabel && (
-                        <div style={{ padding: '6px 10px', background: 'rgba(251,191,36,0.08)', border: '1px solid #fbbf24', marginBottom: '6px' }}>
-                            <span className="retro-mono" style={{ fontSize: '9px', color: '#fbbf24' }}>{scrapedLabel}</span>
-                        </div>
-                    )}
-                    <select value={searchSystem} onChange={e => setSearchSystem(e.target.value)} style={selectStyle}>
-                        <option value="14" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>Nintendo 64</option>
-                        <option value="1" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>Arcade</option>
-                        <option value="3" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>Atari 2600</option>
-                        <option value="12" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>PlayStation</option>
-                        <option value="57" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>PlayStation 2</option>
-                        <option value="46" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>Game Boy Advance</option>
-                    </select>
-                    <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
-                        <input
-                            type="text"
-                            placeholder="Game title..."
-                            value={searchTitle}
-                            onChange={e => setSearchTitle(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
-                            style={{ flex: 1, backgroundColor: '#0a0a0a', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '0px', padding: '7px 10px', fontSize: '11px', outline: 'none' }}
-                        />
-                        <button
-                            onClick={handleSearch}
-                            disabled={isSearching}
-                            style={{ padding: '7px 14px', backgroundColor: '#fbbf24', color: '#000', border: 'none', fontSize: '12px', fontWeight: 900, cursor: 'pointer', opacity: isSearching ? 0.5 : 1 }}
-                        >
-                            {isSearching ? '…' : 'QUERY'}
-                        </button>
-                    </div>
-                    {searchResults.length > 0 && (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '140px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', background: '#0a0a0a', padding: '4px', marginTop: '4px' }}>
-                            {searchResults.map((g: any) => {
-                                const id = g.id || g.ID;
-                                const name = g.noms?.nom_eu || g.noms?.nom_us || g.noms?.nom_jp || g.nom || 'Unknown';
-                                return (
-                                    <button key={id} onClick={() => handleSelectGame(String(id), name)}
-                                        style={{ textAlign: 'left', padding: '6px 10px', fontSize: '10px', color: '#fbbf24', background: 'transparent', border: 'none', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
-                                        onMouseEnter={e => {
-                                            e.currentTarget.style.backgroundColor = '#fbbf24';
-                                            e.currentTarget.style.color = '#000';
-                                        }}
-                                        onMouseLeave={e => {
-                                            e.currentTarget.style.backgroundColor = 'transparent';
-                                            e.currentTarget.style.color = '#fbbf24';
-                                        }}
-                                    >
-                                        {name}
-                                    </button>
-                                );
-                            })}
-                        </div>
-                    )}
-                </SideSection>
-
                 {/* Spacer + export */}
                 <div style={{ flex: 1 }} />
                 <div style={{ padding: '10px 16px', borderTop: '1px solid #1a1a1a', backgroundColor: '#050505' }}>
@@ -639,6 +582,62 @@ export const UVDebugger: React.FC = () => {
 
             {/* viewport */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', backgroundColor: '#020202' }}>
+
+                {/* ScreenScraper search */}
+                <div style={{ position: 'absolute', right: '16px', top: '50%', transform: 'translateY(-50%)', width: '230px', display: 'flex', flexDirection: 'column', gap: '8px', padding: '12px', backgroundColor: 'rgba(5,5,5,0.92)', border: '1px solid rgba(255,255,255,0.15)', zIndex: 25 }}>
+                    <span className="retro-mono" style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: 'rgba(255,255,255,0.5)' }}>ScreenScraper</span>
+                    {scrapedLabel && (
+                        <span className="retro-mono" style={{ fontSize: '9px', color: '#fbbf24', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{scrapedLabel}</span>
+                    )}
+                    <select value={searchSystem} onChange={e => setSearchSystem(e.target.value)} style={selectStyle}>
+                        <option value="14" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>Nintendo 64</option>
+                        <option value="1" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>Arcade</option>
+                        <option value="3" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>Atari 2600</option>
+                        <option value="12" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>PlayStation</option>
+                        <option value="57" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>PlayStation 2</option>
+                        <option value="46" style={{ backgroundColor: '#0a0a0a', color: 'rgba(255,255,255,0.85)' }}>Game Boy Advance</option>
+                    </select>
+                    <div style={{ display: 'flex', gap: '6px' }}>
+                        <input
+                            type="text"
+                            placeholder="Game title"
+                            value={searchTitle}
+                            onChange={e => setSearchTitle(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleSearch()}
+                            style={{ flex: 1, minWidth: 0, backgroundColor: '#0a0a0a', color: '#fff', border: '1px solid rgba(255,255,255,0.15)', borderRadius: '0px', padding: '7px 10px', fontSize: '11px', outline: 'none' }}
+                        />
+                        <button
+                            onClick={handleSearch}
+                            disabled={isSearching}
+                            style={{ padding: '7px 12px', backgroundColor: '#fbbf24', color: '#000', border: 'none', fontSize: '11px', fontWeight: 900, cursor: 'pointer', opacity: isSearching ? 0.5 : 1 }}
+                        >
+                            {isSearching ? '...' : 'Search'}
+                        </button>
+                    </div>
+                    {searchResults.length > 0 && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', maxHeight: '160px', overflowY: 'auto', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: '#0a0a0a', padding: '4px' }}>
+                            {searchResults.map((g: any) => {
+                                const id = g.id || g.ID;
+                                const name = g.noms?.nom_eu || g.noms?.nom_us || g.noms?.nom_jp || g.nom || 'Unknown';
+                                return (
+                                    <button key={id} onClick={() => handleSelectGame(String(id), name)}
+                                        style={{ textAlign: 'left', padding: '6px 10px', fontSize: '10px', color: 'rgba(255,255,255,0.75)', background: 'transparent', border: 'none', cursor: 'pointer', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}
+                                        onMouseEnter={e => {
+                                            e.currentTarget.style.backgroundColor = '#fbbf24';
+                                            e.currentTarget.style.color = '#000';
+                                        }}
+                                        onMouseLeave={e => {
+                                            e.currentTarget.style.backgroundColor = 'transparent';
+                                            e.currentTarget.style.color = 'rgba(255,255,255,0.75)';
+                                        }}
+                                    >
+                                        {name}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
                 
                 {/* HUD */}
                 <div style={{ position: 'absolute', top: '16px', left: '16px', zIndex: 20, pointerEvents: 'none', display: 'flex', gap: '8px' }}>
