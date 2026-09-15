@@ -32,17 +32,17 @@ function Floor() {
     <mesh rotation-x={-Math.PI / 2} position={[0, FLOOR_Y, 0]}>
       <planeGeometry args={[60, 60]} />
       <MeshReflectorMaterial
-        resolution={128}
-        blur={[64, 24]}
-        mixBlur={0.6}
-        mixStrength={40}
+        resolution={256}
+        blur={[180, 60]}
+        mixBlur={0.8}
+        mixStrength={50}
         roughness={0.85}
         depthScale={1.1}
         minDepthThreshold={0.4}
         maxDepthThreshold={1.3}
         color="#0a0b14"
         metalness={0.55}
-        mirror={0.55}
+        mirror={0.6}
       />
     </mesh>
   )
