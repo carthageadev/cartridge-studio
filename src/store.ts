@@ -5,7 +5,7 @@ import { sortLibraryGames, type LibrarySortMode } from "./utils/library"
 import { fetchGameInfo, searchGames } from "./api/screenscraper"
 
 const NO_IMAGE_COVER = "/no-image.svg"
-const SCENE_PRESET_VERSION = 4
+const SCENE_PRESET_VERSION = 5
 
 interface SceneTweaks {
   ambientIntensity: number
@@ -181,11 +181,11 @@ const defaultSceneTweaks: SceneTweaks = {
   floorMetalness: 0.69,
   floorColor: "#08131f",
   floorReflectionSource: "flat",
-  floorResolution: 640,
+  floorResolution: 320,
   floorMixStrength: 9,
   floorRoughness: 0,
   floorBlurX: 0,
-  floorBlurY: 69,
+  floorBlurY: 30,
   floorDepthScale: 1.13,
   floorMinDepthThreshold: 0.11,
   floorMaxDepthThreshold: 1.27,

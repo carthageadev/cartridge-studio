@@ -416,15 +416,17 @@ function Floor() {
           mirror={tweaks.floorMirror}
         />
       </mesh>
-      <ContactShadows
-        position={[0, 0.0, 0]}
-        opacity={tweaks.shadowOpacity}
-        scale={tweaks.shadowScale}
-        blur={tweaks.shadowBlur}
-        far={tweaks.shadowFar}
-        resolution={512}
-        color="#000000"
-      />
+      {tweaks.shadowOpacity > 0 && (
+        <ContactShadows
+          position={[0, 0.0, 0]}
+          opacity={tweaks.shadowOpacity}
+          scale={tweaks.shadowScale}
+          blur={tweaks.shadowBlur}
+          far={tweaks.shadowFar}
+          resolution={256}
+          color="#000000"
+        />
+      )}
     </>
   )
 }
@@ -432,8 +434,8 @@ function Floor() {
 function Particles() {
   return (
     <>
-      <Sparkles count={50} scale={[22, 11, 16]} size={1.2} speed={0.13} opacity={0.15} color="#a5b4fc" />
-      <Sparkles count={25} scale={[22, 11, 16]} size={0.9} speed={0.09} opacity={0.08} color="#f0abfc" />
+      <Sparkles count={30} scale={[22, 11, 16]} size={1.2} speed={0.13} opacity={0.15} color="#a5b4fc" />
+      <Sparkles count={16} scale={[22, 11, 16]} size={0.9} speed={0.09} opacity={0.08} color="#f0abfc" />
     </>
   )
 }
