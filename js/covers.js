@@ -5,10 +5,25 @@ import * as THREE from "three";
    Without keys everything stays procedural. If the browser blocks the
    API (CORS), covers stay procedural too - run a tiny proxy instead. */
 
-const API = "https://www.screenscraper.fr/api2";
 const SYSTEM = "14";
 const LABEL_ORDER = ["eu", "us", "wor", "ss", "jp"];
 const DB_NAME = "epsilon-covers";
+
+function apiBase() {
+  return window.SS_API || "https://www.screenscraper.fr/api2";
+}
+
+/* Route media downloads through the dev proxy when one is configured,
+   same as the API calls. Direct otherwise. */
+function proxify(url) {
+  if (window.SS_API === "/api2") {
+    try {
+      const u = new URL(url);
+      if (u.hostname.includes("screenscraper.fr")) return "/api2" + u.pathname + u.search;
+    } catch { /* fall through to direct */ }
+  }
+  return url;
+}
 
 const mem = new Map();
 let warned = false;
@@ -53,7 +68,7 @@ async function api(endpoint, params, c) {
     devid: c.devid, devpassword: c.devpassword, softname: c.softname,
     output: "json", ...params,
   });
-  const res = await fetch(`${API}/${endpoint}?${qs}`);
+  const res = await fetch(`${apiBase()}/${endpoint}?${qs}`);
   if (!res.ok) throw new Error("http " + res.status);
   return res.json();
 }
@@ -96,7 +111,7 @@ async function downloadLabel(title) {
   const info = await api("jeuInfos.php", { gameid: String(jeux[0].id) }, c);
   const url = pickLabel(info?.response?.jeu?.medias);
   if (!url) return null;
-  const res = await fetch(url);
+  const res = await fetch(proxify(url));
   if (!res.ok) throw new Error("http " + res.status);
   return res.blob();
 }
