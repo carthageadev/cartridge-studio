@@ -39,6 +39,11 @@ function BatteryIcon({ level }: { level: number }) {
   return <BatteryLow className="w-4 h-4 text-red-400" />
 }
 
+/* -- Console key glyph - sharp bordered hint chip -- */
+function KeyGlyph({ children }: { children: React.ReactNode }) {
+  return <span className="inline-flex items-center justify-center min-w-5 h-5 px-1 border border-white/20 text-white/60 text-[9px] font-bold">{children}</span>
+}
+
 /* -- Top status bar + settings -- */
 function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () => void; inspectMode: boolean; setInspectMode: (v: boolean) => void }) {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
@@ -361,6 +366,13 @@ export function UI() {
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Bottom button hints - console style */}
+      <div className="relative z-20 flex items-center justify-center gap-5 pb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-white/35">
+        <span className="flex items-center gap-1.5"><KeyGlyph>←</KeyGlyph><KeyGlyph>→</KeyGlyph> Browse</span>
+        <span className="flex items-center gap-1.5"><KeyGlyph>Click</KeyGlyph> Select</span>
+        <span className="hidden sm:flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
       </div>
 
       <LibraryPanel open={libraryOpen} onClose={() => setLibraryOpen(false)} />
