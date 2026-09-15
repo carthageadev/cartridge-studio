@@ -82,7 +82,7 @@ function Gallery() {
       const row = Math.floor(i / COLS);
       return {
         node: clone,
-        position: [(col - (COLS - 1) / 2) * 3.8, ((COUNT / COLS - 1) / 2 - row) * 4.0, 0] as const,
+        position: [(col - (COLS - 1) / 2) * 4.6, ((COUNT / COLS - 1) / 2 - row) * 4.8, 0] as const,
         rotation: [0, FACE_YAW + (rand(i) - 0.5) * 0.5, (rand(i + 99) - 0.5) * 0.12] as const,
         scale,
       };
@@ -107,7 +107,7 @@ function Gallery() {
 export default function App() {
   return (
     <main className="w-screen h-screen bg-black">
-      <Canvas camera={{ position: [0, 0.5, 18.5], fov: 38 }}>
+      <Canvas camera={{ position: [0, 0.5, 20], fov: 38 }}>
         <color attach="background" args={["#000000"]} />
         <ambientLight intensity={0.7} />
         <directionalLight position={[5, 8, 6]} intensity={2.2} />
