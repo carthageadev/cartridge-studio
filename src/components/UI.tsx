@@ -45,7 +45,7 @@ function KeyGlyph({ children }: { children: React.ReactNode }) {
 }
 
 /* -- Top status bar + settings -- */
-function StatusBar({ onLibrary, inspectMode, setInspectMode, onHome }: { onLibrary: () => void; inspectMode: boolean; setInspectMode: (v: boolean) => void; onHome?: () => void }) {
+function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () => void; inspectMode: boolean; setInspectMode: (v: boolean) => void }) {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
   const [battery] = useState(84)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -64,7 +64,7 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode, onHome }: { onLibra
       {/* -- Top bar -- */}
       <header className="relative z-20 flex items-center justify-between gap-3 px-5 sm:px-8 pt-5 pointer-events-none">
         <div className="flex items-center gap-3 shrink-0 pointer-events-auto">
-          <div onClick={onHome} title={onHome ? "Home" : undefined} className={cn("w-9 h-9 bg-white flex items-center justify-center", onHome && "cursor-pointer")}>
+          <div className="w-9 h-9 bg-white flex items-center justify-center">
             <span className="text-black text-sm font-extrabold font-display">64</span>
           </div>
           <div className="hidden sm:block">
@@ -143,89 +143,6 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode, onHome }: { onLibra
         </DialogContent>
       </Dialog>
     </>
-  )
-}
-
-/* -- Grid home - console channel launcher -- */
-export function HomeScreen({ onPlay }: { onPlay: () => void }) {
-  const getVisibleGames = useStore((s) => s.getVisibleGames)
-  const visibleGames = getVisibleGames()
-  const selectedIndex = useStore((s) => s.selectedIndex)
-  const setSelectedIndex = useStore((s) => s.setSelectedIndex)
-  const [manageOpen, setManageOpen] = useState(false)
-  const [time, setTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
-  const [battery] = useState(84)
-
-  useEffect(() => {
-    const t = setInterval(() => setTime(new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })), 1000)
-    return () => clearInterval(t)
-  }, [])
-
-  useEffect(() => {
-    const h = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement)?.tagName
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return
-      const last = Math.max(0, visibleGames.length - 1)
-      if (e.key === "ArrowRight") setSelectedIndex(Math.min(selectedIndex + 1, last))
-      else if (e.key === "ArrowLeft") setSelectedIndex(Math.max(selectedIndex - 1, 0))
-      else if (e.key === "Enter") onPlay()
-    }
-    window.addEventListener("keydown", h)
-    return () => window.removeEventListener("keydown", h)
-  })
-
-  const game = visibleGames[selectedIndex] ?? visibleGames[0]
-
-  return (
-    <div className="absolute inset-0 flex flex-col z-10 select-none bg-black animate-[modal-fade-in_0.35s_ease-out]">
-      {/* Top system bar */}
-      <header className="flex items-center justify-between px-5 sm:px-8 pt-5">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 bg-white flex items-center justify-center">
-            <span className="text-black text-sm font-extrabold font-display">64</span>
-          </div>
-          <div className="hidden sm:block">
-            <h1 className="font-display text-white text-base font-bold tracking-wide leading-tight">N64 Flow</h1>
-            <p className="font-mono text-white/40 text-[10px] tracking-[0.2em] uppercase">{visibleGames.length} titles</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <button onClick={() => setManageOpen(true)} className="font-mono px-3 py-2 text-[11px] font-bold uppercase tracking-[0.15em] text-white/60 hover:text-white hover:bg-white/5 transition-colors">Manage</button>
-          <div className="flex items-center gap-2.5 px-2 py-1.5 font-mono">
-            <Wifi className="w-4 h-4 text-white/60 hidden sm:block" />
-            <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium"><BatteryIcon level={battery} /><span className="hidden sm:inline">{battery}%</span></div>
-            <div className="w-px h-4 bg-white/10 hidden sm:block" />
-            <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium"><Clock className="w-3.5 h-3.5" /><span className="tabular-nums">{time}</span></div>
-          </div>
-        </div>
-      </header>
-
-      {/* Tile grid */}
-      <div className="flex-1 min-h-0 overflow-y-auto px-5 sm:px-8 py-6">
-        <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 2xl:grid-cols-8 gap-4 max-w-6xl mx-auto">
-          {visibleGames.map((g: any, i: number) => (
-            <button key={g.id} onClick={() => { setSelectedIndex(i); onPlay() }} className="group text-left">
-              <div className={cn("relative aspect-square overflow-hidden bg-white/5 transition-all", i === selectedIndex ? "ring-2 ring-console shadow-lg shadow-console/20" : "ring-1 ring-transparent hover:ring-white/25")}>
-                <img src={g.coverArt} alt={g.title} className="w-full h-full object-cover" draggable={false} />
-              </div>
-              <div className={cn("mt-1.5 text-[11px] font-medium leading-tight truncate", i === selectedIndex ? "text-white" : "text-white/45 group-hover:text-white/70")}>{g.title}</div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Selected title + hints */}
-      <div className="px-5 sm:px-8 pb-2 text-center">
-        {game && <div key={game.id} className="font-display text-white text-xl sm:text-2xl font-bold tracking-tight truncate animate-[modal-fade-in_0.3s_ease-out]">{game.title}</div>}
-        {game && <div className="font-mono text-white/35 text-[10px] uppercase tracking-[0.25em] mt-1">{game.year} · {game.genre}</div>}
-      </div>
-      <div className="flex items-center justify-center gap-5 pb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-white/35">
-        <span className="flex items-center gap-1.5"><KeyGlyph>←</KeyGlyph><KeyGlyph>→</KeyGlyph> Browse</span>
-        <span className="flex items-center gap-1.5"><KeyGlyph>Enter</KeyGlyph> Play</span>
-      </div>
-
-      <LibraryPanel open={manageOpen} onClose={() => setManageOpen(false)} />
-    </div>
   )
 }
 
@@ -342,7 +259,7 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
 }
 
 /* -- Main UI -- */
-export function UI({ onHome }: { onHome?: () => void }) {
+export function UI() {
   const selectedIndex = useStore((s) => s.selectedIndex)
   const next = useStore((s) => s.next)
   const prev = useStore((s) => s.prev)
@@ -367,11 +284,7 @@ export function UI({ onHome }: { onHome?: () => void }) {
     if (e.key === "ArrowLeft" || e.key === "a" || e.key === "A") prev()
     if (e.key === "i" || e.key === "I") setInspectMode(!inspectMode)
     if (e.key === "h" || e.key === "H") toggleLeva()
-    if (e.key === "Escape" && onHome && !libraryOpen) {
-      const tag = (e.target as HTMLElement)?.tagName
-      if (tag !== "INPUT" && tag !== "TEXTAREA" && tag !== "SELECT") onHome()
-    }
-  }, [next, prev, inspectMode, setInspectMode, toggleLeva, onHome, libraryOpen])
+  }, [next, prev, inspectMode, setInspectMode, toggleLeva])
 
   useEffect(() => { window.addEventListener("keydown", handleKey); return () => window.removeEventListener("keydown", handleKey) }, [handleKey])
 
@@ -391,7 +304,7 @@ export function UI({ onHome }: { onHome?: () => void }) {
       {/* Dip-to-black veil on zoom toggle - smooth crossfade */}
       <div key={String(inspectMode)} className="absolute inset-0 bg-black pointer-events-none animate-[veil-out_0.5s_ease-out_forwards]" />
 
-      <StatusBar onLibrary={() => setLibraryOpen(true)} inspectMode={inspectMode} setInspectMode={setInspectMode} onHome={onHome} />
+      <StatusBar onLibrary={() => setLibraryOpen(true)} inspectMode={inspectMode} setInspectMode={setInspectMode} />
 
       {/* Middle: arrows + inspect hint */}
       <div className="relative flex-1 min-h-0">
