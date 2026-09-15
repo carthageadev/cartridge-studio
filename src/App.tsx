@@ -26,6 +26,11 @@ const LABELS = [
 const COLS = 4;
 const COUNT = 12;
 
+/* Yaw that points the label sticker at the camera. Measured from the
+   model itself: the boxart node sits at (-0.021, 0.218, -0.168), so the
+   sticker faces -Z and needs yaw = atan2(0.021, -0.168) = 3.02. */
+const FACE_YAW = 3.02;
+
 function Gallery() {
   const gltf = useGLTF(`${BASE}/model.glb`);
   const [map, normalMap, roughnessMap] = useTexture([
@@ -72,7 +77,7 @@ function Gallery() {
       return {
         node: clone,
         position: [(col - (COLS - 1) / 2) * 3.1, ((COUNT / COLS - 1) / 2 - row) * 3.4, 0] as const,
-        rotationY: Math.PI + (i % 3 - 1) * 0.18,
+        rotationY: FACE_YAW + (i % 3 - 1) * 0.18,
         scale,
       };
     });
@@ -104,7 +109,7 @@ export default function App() {
         <Suspense fallback={null}>
           <Gallery />
         </Suspense>
-        <OrbitControls autoRotate autoRotateSpeed={0.8} />
+        <OrbitControls enableDamping={false} />
       </Canvas>
     </main>
   );
