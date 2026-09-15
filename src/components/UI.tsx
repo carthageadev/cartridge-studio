@@ -61,8 +61,8 @@ function StatusBar() {
 
   return (
     <>
-      {/* -- Top bar - brand and system readouts sit on the left, the carousel owns the right -- */}
-      <header className="relative z-20 flex items-center gap-3 sm:gap-5 px-5 sm:px-8 pt-5 pointer-events-none">
+      {/* -- Top bar - brand left, system readouts right -- */}
+      <header className="relative z-20 flex items-center justify-between gap-3 px-5 sm:px-8 pt-5 pointer-events-none">
         <div className="flex items-center gap-3 shrink-0 pointer-events-auto">
           <div className="w-9 h-9 bg-white flex items-center justify-center">
             <span className="text-black text-sm font-extrabold font-display">64</span>
@@ -359,29 +359,8 @@ export function UI() {
 
       <StatusBar />
 
-      {/* Middle: vertical navigation cluster on the left, plus zoom HUD */}
+      {/* Middle: zoom HUD */}
       <div className="relative flex-1 min-h-0">
-        {!inspectMode && visibleGames.length > 1 && (
-          <div className="absolute left-3 sm:left-5 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2">
-            <button
-              onClick={prev}
-              aria-label="Previous cartridge"
-              className="w-10 h-10 shrink-0 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 pointer-events-auto cursor-pointer"
-            >
-              <ChevronUp className="w-5 h-5" />
-            </button>
-
-            <CoverRail games={visibleGames} selectedIndex={selectedIndex} onSelect={setSelectedIndex} />
-
-            <button
-              onClick={next}
-              aria-label="Next cartridge"
-              className="w-10 h-10 shrink-0 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 pointer-events-auto cursor-pointer"
-            >
-              <ChevronDown className="w-5 h-5" />
-            </button>
-          </div>
-        )}
         {inspectMode && (
           <>
             <div className="absolute inset-x-8 inset-y-6 sm:inset-x-14 sm:inset-y-10 pointer-events-none">
@@ -395,8 +374,8 @@ export function UI() {
       </div>
 
       {/* Deck - info anchored bottom left, the carousel owns the right */}
-      <div className="relative z-20 shrink-0 border-t border-white/[0.07] bg-gradient-to-t from-black/80 to-transparent">
-        <div className={cn("px-5 sm:px-8 pt-4 pb-5 transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
+      <div className="relative z-20 shrink-0 bg-gradient-to-t from-black/80 to-transparent">
+        <div className={cn("pl-5 sm:pl-8 pr-16 pt-4 pb-5 transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
           <div className="max-w-xl">
             <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
               <span className="text-console">{game.genre}</span>
@@ -445,6 +424,29 @@ export function UI() {
           </div>
         </div>
       </div>
+
+      {/* Navigation cluster - bottom right corner */}
+      {!inspectMode && visibleGames.length > 1 && (
+        <div className="absolute right-4 sm:right-6 bottom-6 z-20 flex flex-col items-center gap-2 pointer-events-auto">
+          <button
+            onClick={prev}
+            aria-label="Previous cartridge"
+            className="w-10 h-10 shrink-0 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 cursor-pointer"
+          >
+            <ChevronUp className="w-5 h-5" />
+          </button>
+
+          <CoverRail games={visibleGames} selectedIndex={selectedIndex} onSelect={setSelectedIndex} />
+
+          <button
+            onClick={next}
+            aria-label="Next cartridge"
+            className="w-10 h-10 shrink-0 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 cursor-pointer"
+          >
+            <ChevronDown className="w-5 h-5" />
+          </button>
+        </div>
+      )}
 
       <LibraryPanel open={libraryOpen} onClose={() => setLibraryOpen(false)} />
     </div>
