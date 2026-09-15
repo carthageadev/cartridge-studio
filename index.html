@@ -591,7 +591,7 @@ async function loadAssets() {
     const box = new THREE.Box3().setFromObject(gltf.scene);
     const size = new THREE.Vector3(), center = new THREE.Vector3();
     box.getSize(size); box.getCenter(center);
-    const scale = 2.8 / Math.max(size.y, 0.001);
+    const scale = 2.5 / Math.max(size.y, 0.001);
     gltf.scene.position.sub(center);
     const inner = new THREE.Group(); inner.add(gltf.scene); inner.scale.setScalar(scale);
     const template = new THREE.Group(); template.add(inner);
