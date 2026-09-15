@@ -33,10 +33,11 @@ class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
 }
 
 import { UVDebugger } from './components/UVDebugger';
+import { LoadingScreen } from './components/LoadingScreen';
 
 const App: React.FC = () => {
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const [isDebug, setIsDebug] = useState(false);
+  const [isDebug, setIsDebug] = useState(true);
 
   // Keyboard navigation
   useEffect(() => {
@@ -72,16 +73,16 @@ const App: React.FC = () => {
 
   if (isDebug) {
     return (
-      <main className="w-full h-screen bg-[#111] overflow-hidden relative">
+      <main key="debug" className="w-full h-screen bg-black overflow-hidden relative animate-[fadeIn_0.35s_ease-out]">
         <UVDebugger />
-        {/* Yellow diagnostic zone with black-themed exit button */}
-        <div className="absolute top-4 right-4 bg-amber-400 p-1 rounded shadow-md z-50 flex items-center gap-1.5 border border-amber-500 select-none">
-          <span className="text-[9px] font-mono font-black text-black px-1.5 uppercase tracking-wider">🛠️ DIAGNOSTIC</span>
+        <LoadingScreen />
+        <div className="absolute top-4 right-4 bg-black/70 backdrop-blur px-2 py-1 z-50 flex items-center gap-2 border border-white/10 select-none">
+          <span className="text-[9px] font-mono text-white/50 px-1 uppercase tracking-wider">Diagnostic</span>
           <button
             onClick={() => setIsDebug(false)}
-            className="bg-black hover:bg-neutral-800 text-white text-[9px] font-mono font-bold px-2 py-0.5 rounded transition-all uppercase tracking-wider border border-neutral-700"
+            className="bg-white text-black text-[9px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider hover:bg-white/80 transition-colors"
           >
-            EXIT (D)
+            Exit (D)
           </button>
         </div>
       </main>
@@ -89,7 +90,7 @@ const App: React.FC = () => {
   }
 
   return (
-    <main className="w-full h-screen bg-[#111] overflow-hidden relative selection:bg-indigo-500 selection:text-white">
+    <main key="home" className="w-full h-screen bg-black overflow-hidden relative selection:bg-indigo-500 selection:text-white animate-[fadeIn_0.35s_ease-out]">
       {/* 3D Layer with Error Boundary */}
       <ErrorBoundary>
         <Scene
@@ -97,6 +98,8 @@ const App: React.FC = () => {
           setSelectedIndex={handleSelectIndex}
         />
       </ErrorBoundary>
+
+      <LoadingScreen />
 
       {/* UI Layer */}
       <UIOverlay
@@ -107,14 +110,13 @@ const App: React.FC = () => {
         onPrev={handlePrev}
       />
 
-      {/* Yellow diagnostic zone with black-themed debug button in bottom-left */}
-      <div className="absolute bottom-4 left-4 bg-amber-400 p-1 rounded shadow-md z-50 flex items-center gap-1.5 border border-amber-500 select-none">
-        <span className="text-[9px] font-mono font-black text-black px-1.5 uppercase tracking-wider">🛠️ INSPECT</span>
+      <div className="absolute bottom-4 left-4 bg-black/70 backdrop-blur px-2 py-1 z-50 flex items-center gap-2 border border-white/10 select-none">
+        <span className="text-[9px] font-mono text-white/50 px-1 uppercase tracking-wider">Inspector</span>
         <button
           onClick={() => setIsDebug(true)}
-          className="bg-black hover:bg-neutral-800 text-white text-[9px] font-mono font-bold px-2 py-0.5 rounded transition-all uppercase tracking-wider border border-neutral-700"
+          className="bg-white text-black text-[9px] font-mono font-bold px-2 py-0.5 uppercase tracking-wider hover:bg-white/80 transition-colors"
         >
-          DEBUG (D)
+          Debug (D)
         </button>
       </div>
 

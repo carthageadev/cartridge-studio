@@ -21,14 +21,14 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
     <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-8 md:p-12 z-10">
       {/* Header */}
       <header className="flex justify-between items-start">
-        <div className="bg-black/40 backdrop-blur-md p-4 rounded-xl border border-white/10 shadow-2xl">
+        <div className="bg-black/40 backdrop-blur-md p-4 border border-white/10 shadow-2xl">
             <h1 className="text-2xl font-black text-white italic tracking-tighter flex items-center gap-2">
                 <Gamepad2 className="w-6 h-6 text-indigo-400" />
                 RETROFLOW<span className="text-indigo-500">3D</span>
             </h1>
         </div>
         
-        <div className="bg-black/40 backdrop-blur-md px-4 py-2 rounded-full border border-white/10 text-white/60 font-mono text-sm transition-all duration-300">
+        <div className="bg-black/40 backdrop-blur-md px-4 py-2 border border-white/10 text-white/60 font-mono text-sm">
             COLLECTION {currentIndex + 1} / {totalGames}
         </div>
       </header>
@@ -39,13 +39,13 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
             {/* Keyed div triggers animation on change */}
             <div 
                 key={game.id}
-                className="bg-black/60 backdrop-blur-lg p-6 md:p-8 rounded-2xl border border-white/10 shadow-2xl transform transition-all duration-300 origin-bottom-left animate-[fadeInSlideUp_0.4s_ease-out_forwards]"
+                className="bg-black/60 backdrop-blur-lg p-6 md:p-8 border border-white/10 shadow-2xl animate-[fadeIn_0.4s_ease-out]"
             >
                 <div className="flex items-center gap-4 mb-2 text-xs font-bold tracking-widest uppercase text-white/50">
-                    <span className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded">
+                    <span className="flex items-center gap-1 bg-white/5 px-2 py-1">
                         <Calendar className="w-3 h-3" /> {game.year}
                     </span>
-                    <span className="flex items-center gap-1 bg-white/5 px-2 py-1 rounded text-indigo-300">
+                    <span className="flex items-center gap-1 bg-white/5 px-2 py-1 text-indigo-300">
                         <Tags className="w-3 h-3" /> {game.genre}
                     </span>
                 </div>
@@ -65,10 +65,10 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
                 </div>
 
                 <div className="mt-4 flex gap-3 opacity-0 animate-[fadeIn_0.4s_ease-out_0.2s_forwards]">
-                     <button className="bg-white text-black font-bold px-6 py-3 rounded-lg hover:bg-indigo-400 hover:text-white transition-colors duration-200">
+                     <button className="bg-white text-black font-bold px-6 py-3 hover:bg-white/85 transition-colors duration-200">
                         Start Game
                      </button>
-                     <button className="bg-white/10 text-white font-bold px-6 py-3 rounded-lg hover:bg-white/20 transition-colors duration-200 backdrop-blur-sm">
+                     <button className="bg-white/10 text-white font-bold px-6 py-3 hover:bg-white/20 transition-colors duration-200 backdrop-blur-sm">
                         Details
                      </button>
                 </div>
@@ -80,14 +80,14 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
             <button 
                 onClick={onPrev}
                 disabled={currentIndex === 0}
-                className="w-14 h-14 flex items-center justify-center rounded-full bg-white/10 border border-white/20 text-white hover:bg-white hover:text-black hover:scale-110 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-white/10 disabled:hover:text-white transition-all duration-200 backdrop-blur-md"
+                className="w-14 h-14 flex items-center justify-center bg-white/10 border border-white/20 text-white hover:bg-white hover:text-black active:scale-95 disabled:opacity-30 disabled:hover:bg-white/10 disabled:hover:text-white transition-colors duration-200 backdrop-blur-md"
             >
                 <ChevronLeft size={32} />
             </button>
             <button 
                 onClick={onNext}
                 disabled={currentIndex === totalGames - 1}
-                className="w-14 h-14 flex items-center justify-center rounded-full bg-white/10 border border-white/20 text-white hover:bg-white hover:text-black hover:scale-110 active:scale-95 disabled:opacity-30 disabled:hover:scale-100 disabled:hover:bg-white/10 disabled:hover:text-white transition-all duration-200 backdrop-blur-md"
+                className="w-14 h-14 flex items-center justify-center bg-white/10 border border-white/20 text-white hover:bg-white hover:text-black active:scale-95 disabled:opacity-30 disabled:hover:bg-white/10 disabled:hover:text-white transition-colors duration-200 backdrop-blur-md"
             >
                 <ChevronRight size={32} />
             </button>
@@ -95,10 +95,6 @@ export const UIOverlay: React.FC<UIOverlayProps> = ({
       </footer>
       
       <style>{`
-        @keyframes fadeInSlideUp {
-          from { opacity: 0; transform: translateY(20px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
         @keyframes fadeIn {
           from { opacity: 0; }
           to { opacity: 1; }

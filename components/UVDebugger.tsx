@@ -1,10 +1,10 @@
 import React, { Suspense, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls, useGLTF, Grid, Environment } from '@react-three/drei';
+import { OrbitControls, useGLTF, Grid, Environment, Lightformer } from '@react-three/drei';
 import * as THREE from 'three';
 
 // -----------------------------------------------------------------------------
-// Stylesheet injection for fonts, scrollbars and range sliders
+// stylesheet injection for fonts, scrollbars and range sliders
 // -----------------------------------------------------------------------------
 const StyleInject = () => (
     <style dangerouslySetInnerHTML={{ __html: `
@@ -99,7 +99,7 @@ const apiConfigPromise = typeof fetch !== 'undefined'
       .catch(() => {})
       .then(() => assetBaseReadyResolve())
   : Promise.resolve().then(() => assetBaseReadyResolve())
-export { assetUrl, apiConfigPromise }
+export { apiConfigPromise }
 
 const CART_ASSETS = [
     { label: '(Unassigned)', value: '' },
@@ -215,16 +215,16 @@ const CartModel = ({
 };
 
 // -----------------------------------------------------------------------------
-// RotatableGroup - lets mouse drag rotate the model with premium damping instead of moving camera
+// RotatableGroup - drag to rotate, wheel to zoom
 // -----------------------------------------------------------------------------
 const RotatableGroup = ({ children }: { children: React.ReactNode }) => {
     const groupRef = useRef<THREE.Group>(null);
     const { gl, camera, invalidate } = useThree();
 
-    const targetRotation = useRef({ x: 0.2, y: 0 }); // Start with slight cool tilt
+    const targetRotation = useRef({ x: 0.2, y: 0 }); // initial tilt
     const currentRotation = useRef({ x: 0.2, y: 0 });
 
-    // Zoom distance targets (initial distance of [0, 2, 6] camera is sqrt(40) ~ 6.32)
+    // zoom distance targets
     const targetZoom = useRef(Math.sqrt(40));
     const currentZoom = useRef(Math.sqrt(40));
 
@@ -245,9 +245,9 @@ const RotatableGroup = ({ children }: { children: React.ReactNode }) => {
             const deltaX = e.clientX - prevPointer.current.x;
             const deltaY = e.clientY - prevPointer.current.y;
 
-            // Sensitivity multiplier - adjust for perfect speed
+            // drag sensitivity
             targetRotation.current.y += deltaX * 0.007;
-            targetRotation.current.x += deltaY * 0.007; // Reverted vertical invert as requested
+            targetRotation.current.x += deltaY * 0.007;
 
             // Clamp X rotation to avoid flipping upside down (-90 to +90 degrees)
             targetRotation.current.x = Math.max(-Math.PI / 2.2, Math.min(Math.PI / 2.2, targetRotation.current.x));
@@ -283,7 +283,7 @@ const RotatableGroup = ({ children }: { children: React.ReactNode }) => {
     useFrame(() => {
         if (!groupRef.current) return;
 
-        // Premium lag / inertia factor
+        // damping
         const damp = 0.08;
 
         const diffX = targetRotation.current.x - currentRotation.current.x;
@@ -322,7 +322,7 @@ const RotatableGroup = ({ children }: { children: React.ReactNode }) => {
 };
 
 // -----------------------------------------------------------------------------
-// Shared select style - industrial black + yellow theme with sharp corners
+// shared select style
 // -----------------------------------------------------------------------------
 const selectStyle: React.CSSProperties = {
     backgroundColor: '#0a0a0a',
@@ -346,7 +346,7 @@ export const UVDebugger: React.FC = () => {
     const [meshList, setMeshList] = useState<string[]>([]);
     const [isMeshMapOpen, setIsMeshMapOpen] = useState(true);
 
-    // Default Lighting Rig set from user's specification
+    // lighting defaults
     const [ambientInt, setAmbientInt] = useState(0.05);
     const [keyInt, setKeyInt] = useState(6.0);
     const [fillInt, setFillInt] = useState(4.0);
@@ -369,7 +369,7 @@ export const UVDebugger: React.FC = () => {
         });
     }, [selectedMesh]);
 
-    // Apply boxart to the boxart mesh specifically - always
+    // apply boxart to the boxart mesh
     const applyBoxart = useCallback((url: string, label: string) => {
         setConfigs(prev => ({
             ...prev,
@@ -385,7 +385,7 @@ export const UVDebugger: React.FC = () => {
         return [...CART_ASSETS, ...extras];
     }, [scrapedLabel, configs]);
 
-    // -- ScreenScraper search --------------------------------------------------
+    // ScreenScraper search
     const handleSearch = async () => {
         if (!searchTitle.trim()) return;
         setIsSearching(true);
@@ -454,7 +454,7 @@ export const UVDebugger: React.FC = () => {
         setMeshList(names);
     }, []);
 
-    // Diagonal hazard stripe decoration style
+    // header stripe
     const hazardStripesStyle: React.CSSProperties = {
         height: '4px',
         background: 'repeating-linear-gradient(45deg, #fbbf24, #fbbf24 8px, #000 8px, #000 16px)',
@@ -468,30 +468,27 @@ export const UVDebugger: React.FC = () => {
         <div className="retro-tech" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'row', backgroundColor: '#000000', color: '#fbbf24', overflow: 'hidden', userSelect: 'none' }}>
             <StyleInject />
 
-            {/* -- Sidebar (TACTICAL INSPECTION MONITOR) ---------------------- */}
-            <div style={{ width: '280px', backgroundColor: '#070707', borderRight: '2px solid #fbbf24', display: 'flex', flexDirection: 'column', overflowY: 'auto', zIndex: 10, flexShrink: 0 }}>
+            {/* sidebar */}
+            <div style={{ width: '280px', backgroundColor: '#070707', borderRight: '2px solid #fbbf24', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 10, flexShrink: 0 }}>
 
                 {/* Header */}
-                <div style={{ padding: '20px 20px 16px 20px', borderBottom: '1px solid #1a1a1a', position: 'relative' }}>
+                <div style={{ padding: '10px 16px 8px 16px', borderBottom: '1px solid #1a1a1a', position: 'relative' }}>
                     <div style={hazardStripesStyle} />
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
                         <span style={{ fontSize: '18px', fontWeight: 900, color: '#fbbf24', letterSpacing: '-0.5px' }}>
                             CART STUDIO
-                        </span>
-                        <span style={{ fontSize: '9px', textTransform: 'uppercase', padding: '2px 8px', background: '#fbbf24', color: '#000', fontWeight: 'bold' }}>
-                            WebGPU
-                        </span>
+                        </span>
                     </div>
-                    <p className="retro-mono" style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginTop: '5px', letterSpacing: '0.1em' }}>model.glb · Diagnostic</p>
+                    <p className="retro-mono" style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginTop: '5px', letterSpacing: '0.1em' }}>model.glb</p>
                 </div>
 
                 {/* Mesh Selector */}
-                <SideSection label="Active Mesh Block" badge={`${meshList.length} nodes`}>
+                <SideSection label="Mesh" badge={`${meshList.length} nodes`}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <MeshPill name="all" label="⧉ Global Override" active={selectedMesh === 'all'} hasConfig onClick={() => setSelectedMesh('all')} />
+                        <MeshPill name="all" label="Global" active={selectedMesh === 'all'} hasConfig onClick={() => setSelectedMesh('all')} />
                         {meshList.map(name => (
                             <MeshPill key={name} name={name}
-                                label={name === 'boxart' ? `🖼️ ${name} (target)` : `📦 ${name}`}
+                                label={name}
                                 active={selectedMesh === name}
                                 hasConfig={configs[name] !== undefined}
                                 onClick={() => setSelectedMesh(name)}
@@ -501,7 +498,7 @@ export const UVDebugger: React.FC = () => {
                 </SideSection>
 
                 {/* Texture Slots */}
-                <SideSection label="Map Channels" badge={`mesh: ${selectedMesh}`}>
+                <SideSection label="Textures" badge={`mesh: ${selectedMesh}`}>
                     {([
                         { label: 'BASE COLOR', key: 'baseColor' as const, color: '#34d399' },
                         { label: 'NORMAL Map', key: 'normal' as const, color: '#60a5fa' },
@@ -540,8 +537,8 @@ export const UVDebugger: React.FC = () => {
                 </SideSection>
 
                 {/* Lighting */}
-                <SideSection label="Tactical Lighting Setup">
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <SideSection label="Lighting">
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                         <LightSlider label="Ambient" value={ambientInt} min={0} max={1} step={0.05} onChange={setAmbientInt} color="rgba(255,255,255,0.4)" />
                         <LightSlider label="HDR Env" value={envIntensity} min={0} max={3} step={0.05} onChange={setEnvIntensity} color="#a78bfa" />
                         <LightSlider label="Key" value={keyInt} min={0} max={8} step={0.1} onChange={setKeyInt} color="#fbbf24" />
@@ -554,7 +551,7 @@ export const UVDebugger: React.FC = () => {
                 <SideSection label="Database Sync" badge="api interface">
                     {scrapedLabel && (
                         <div style={{ padding: '6px 10px', background: 'rgba(251,191,36,0.08)', border: '1px solid #fbbf24', marginBottom: '6px' }}>
-                            <span className="retro-mono" style={{ fontSize: '9px', color: '#fbbf24' }}>🎮 {scrapedLabel}</span>
+                            <span className="retro-mono" style={{ fontSize: '9px', color: '#fbbf24' }}>{scrapedLabel}</span>
                         </div>
                     )}
                     <select value={searchSystem} onChange={e => setSearchSystem(e.target.value)} style={selectStyle}>
@@ -599,7 +596,7 @@ export const UVDebugger: React.FC = () => {
                                             e.currentTarget.style.color = '#fbbf24';
                                         }}
                                     >
-                                        ⚡ {name}
+                                        {name}
                                     </button>
                                 );
                             })}
@@ -609,7 +606,7 @@ export const UVDebugger: React.FC = () => {
 
                 {/* Spacer + export */}
                 <div style={{ flex: 1 }} />
-                <div style={{ padding: '16px 20px', borderTop: '1px solid #1a1a1a', backgroundColor: '#050505' }}>
+                <div style={{ padding: '10px 16px', borderTop: '1px solid #1a1a1a', backgroundColor: '#050505' }}>
                     <button
                         onClick={() => {
                             const fullConfig = {
@@ -635,12 +632,12 @@ export const UVDebugger: React.FC = () => {
                             e.currentTarget.style.color = '#000';
                         }}
                     >
-                        ⚡ COPY CONFIG PROFILE
+                        Copy config
                     </button>
                 </div>
             </div>
 
-            {/* -- Viewport (3D WORKSPACE) ----------------------------------- */}
+            {/* viewport */}
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative', backgroundColor: '#020202' }}>
                 
                 {/* HUD */}
@@ -650,11 +647,11 @@ export const UVDebugger: React.FC = () => {
                         <span style={{ fontSize: '10px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>model.glb</span>
                     </HudPill>
                     <HudPill>
-                        <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{meshList.length} NODES ONLINE</span>
+                        <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#fbbf24', textTransform: 'uppercase', letterSpacing: '0.1em' }}>{meshList.length} nodes</span>
                     </HudPill>
                     {scrapedLabel && (
                         <HudPill accent>
-                            <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#fbbf24' }}>🎮 {scrapedLabel}</span>
+                            <span style={{ fontSize: '10px', fontFamily: 'monospace', color: '#fbbf24' }}>{scrapedLabel}</span>
                         </HudPill>
                     )}
                 </div>
@@ -670,8 +667,13 @@ export const UVDebugger: React.FC = () => {
                         <Suspense fallback={null}>
                             <color attach="background" args={['#020202']} />
 
-                            {/* HDR environment - provides ambient IBL + reflections */}
-                            <Environment files="/monochrome_studio_03_1k.hdr" background={false} environmentIntensity={envIntensity} />
+                            {/* Studio environment - provides ambient IBL + reflections */}
+                            <Environment resolution={256} background={false} environmentIntensity={envIntensity}>
+                                <Lightformer intensity={2} position={[0, 5, -9]} scale={[10, 10, 1]} />
+                                <Lightformer intensity={1} position={[-5, 1, -1]} rotation-y={Math.PI / 2} scale={[20, 0.5, 1]} />
+                                <Lightformer intensity={1} position={[5, 1, -1]} rotation-y={-Math.PI / 2} scale={[20, 0.5, 1]} />
+                                <Lightformer intensity={1} position={[0, 1, 5]} scale={[10, 2, 1]} />
+                            </Environment>
 
                             {/* Ambient fill - keep low so IBL does the work */}
                             <ambientLight intensity={ambientInt} />
@@ -694,7 +696,7 @@ export const UVDebugger: React.FC = () => {
                     </Canvas>
                 </div>
 
-                {/* -- Collapsible Live Mesh Map Diagnostics Panel ---------------- */}
+                {/* mesh list */}
                 <div style={{ 
                     backgroundColor: '#070707', 
                     borderTop: '2px solid #fbbf24', 
@@ -702,7 +704,7 @@ export const UVDebugger: React.FC = () => {
                     zIndex: 30,
                     position: 'relative'
                 }}>
-                    {/* Panel Header/Toggler - stopPropagation prevents canvas from stealing the pointer event */}
+                    {/* panel header */}
                     <div 
                         onPointerDown={e => { e.stopPropagation(); }}
                         onClick={() => setIsMeshMapOpen(prev => !prev)}
@@ -719,14 +721,14 @@ export const UVDebugger: React.FC = () => {
                         }}
                     >
                         <span className="retro-mono" style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#fbbf24', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                            <span style={{ fontSize: '8px' }}>{isMeshMapOpen ? '▼' : '▲'}</span> LIVE MESH DIAGNOSTICS
+                            <span style={{ fontSize: '8px' }}>{isMeshMapOpen ? '▼' : '▲'}</span> Meshes
                         </span>
                         <span className="retro-mono" style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase' }}>
-                            {meshList.length} segments · click to {isMeshMapOpen ? 'collapse' : 'expand'}
+                            {meshList.length} meshes
                         </span>
                     </div>
 
-                    {/* Collapsible content */}
+                    {/* list */}
                     {isMeshMapOpen && (
                         <div
                             onPointerDown={e => e.stopPropagation()}
@@ -753,7 +755,7 @@ export const UVDebugger: React.FC = () => {
                                             color: isBoxart ? '#fbbf24' : 'rgba(255,255,255,0.6)'
                                         }}
                                     >
-                                        <span style={{ fontWeight: 700 }}>{isBoxart ? '⚡' : '⧉'} {name}</span>
+                                        <span style={{ fontWeight: 700 }}>{name}</span>
                                         <div style={{ display: 'flex', gap: '12px', fontSize: '9px' }}>
                                             <span style={{ color: mc.baseColor ? '#34d399' : 'rgba(255,255,255,0.15)' }}>DIFF: {mc.baseColor ? mc.baseColor.split('/').pop()?.split('?')[0] : '-'}</span>
                                             <span style={{ color: mc.normal ? '#60a5fa' : 'rgba(255,255,255,0.15)' }}>NRM: {mc.normal ? '✓' : '-'}</span>
@@ -764,7 +766,7 @@ export const UVDebugger: React.FC = () => {
                             })}
                             {meshList.length === 0 && (
                                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '60px', fontSize: '10px', fontFamily: 'monospace', color: 'rgba(255,255,255,0.2)' }}>
-                                    CONNECTING TO GLB SCANNER...
+                                    Loading model...
                                 </div>
                             )}
                         </div>
@@ -776,13 +778,13 @@ export const UVDebugger: React.FC = () => {
 };
 
 // -----------------------------------------------------------------------------
-// Small reusable UI atoms (all inline-styled - no Tailwind dependency)
+// small reusable UI atoms
 // -----------------------------------------------------------------------------
 const SideSection = ({ label, badge, children }: { label: string; badge?: React.ReactNode; children: React.ReactNode }) => (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '16px 20px', borderBottom: '1px solid #1a1a1a' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '8px 16px', borderBottom: '1px solid #1a1a1a' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <span className="retro-mono" style={{ fontSize: '9px', fontWeight: 900, textTransform: 'uppercase', letterSpacing: '0.15em', color: '#fbbf24' }}>
-                // {label}
+                {label}
             </span>
             {badge && <div style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)' }}>{badge}</div>}
         </div>
@@ -794,7 +796,7 @@ const MeshPill = ({ name, label, active, hasConfig, onClick }: { name: string; l
     <button onClick={onClick} style={{ 
         width: '100%', 
         textAlign: 'left', 
-        padding: '8px 12px', 
+        padding: '6px 10px', 
         fontSize: '11px', 
         cursor: 'pointer', 
         transition: 'all 0.15s', 
@@ -809,7 +811,7 @@ const MeshPill = ({ name, label, active, hasConfig, onClick }: { name: string; l
     }}>
         <span>{label}</span>
         {hasConfig && name !== 'all' && (
-            <span style={{ color: active ? '#000' : '#fbbf24', fontSize: '9px', fontWeight: 'bold' }}>[OK]</span>
+            <span style={{ color: active ? '#000' : '#fbbf24', fontSize: '9px', fontWeight: 'bold' }}>set</span>
         )}
     </button>
 );

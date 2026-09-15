@@ -6,8 +6,13 @@
     <title>RetroFlow 3D</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-      body, html { margin: 0; padding: 0; overflow: hidden; background-color: #111; }
+      body, html { margin: 0; padding: 0; overflow: hidden; background-color: #000; }
       #root { width: 100vw; height: 100vh; }
+      /* Global fade - opacity only, no movement */
+      @keyframes fadeIn {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
       /* Custom Scrollbar Handling for non-tailwind needs */
       .no-scrollbar::-webkit-scrollbar {
           display: none;
