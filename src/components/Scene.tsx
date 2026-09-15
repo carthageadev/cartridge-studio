@@ -1,10 +1,9 @@
 import { useRef, useMemo, useEffect, useState, Suspense } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { Html, useCursor, useGLTF, Environment, Sparkles, ContactShadows } from "@react-three/drei"
+import { Html, useCursor, useGLTF, Environment, Sparkles } from "@react-three/drei"
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing"
 import * as THREE from "three"
 import { button, folder, useControls } from "leva"
-import { LayeredReflectorMaterial } from "./LayeredReflectorMaterial"
 import { type Game } from "../data/games"
 import { useStore } from "../store"
 
@@ -42,9 +41,6 @@ const CAROUSEL_STEP = 1.0
 const CAROUSEL_DEPTH_STEP = 0.55
 const CAROUSEL_CENTER_X = 1.6
 const CAROUSEL_SLANT = -0.05
-const REFLECTION_LAYER = 1
-const FLOOR_LAYER = 2
-
 /* Signed distance from the selection, wrapped to the nearest copy.
    Keeps the carousel looping instead of ending at either edge. */
 function wrappedOffset(index: number, selectedIndex: number, count: number): number {
@@ -158,7 +154,6 @@ function Cartridge3D({ game }: { game: Game }) {
     clone.traverse((child) => {
       if ((child as THREE.Mesh).isMesh) {
         const mesh = child as THREE.Mesh
-        mesh.layers.enable(REFLECTION_LAYER)
 
         if (mesh.name === "model_2") {
           // -- PBR PLASTIC --
@@ -393,60 +388,6 @@ function InspectScene({ game }: { game: Game }) {
   )
 }
 
-/* ================================================================== */
-/*  Floor - subtle reflective                                          */
-/* ================================================================== */
-
-function Floor() {
-  const tweaks = useStore((s) => s.sceneTweaks)
-  const meshRef = useRef<THREE.Mesh>(null)
-
-  useEffect(() => {
-    if (!meshRef.current) return
-    if (tweaks.floorReflectionSource === "flat") {
-      meshRef.current.layers.set(FLOOR_LAYER)
-    } else {
-      meshRef.current.layers.enable(0)
-      meshRef.current.layers.enable(FLOOR_LAYER)
-    }
-  }, [tweaks.floorReflectionSource])
-
-  return (
-    <>
-      <mesh ref={meshRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <planeGeometry args={[80, 42]} />
-        <LayeredReflectorMaterial
-          includeEnvironment={tweaks.floorReflectionSource === "environment"}
-          layer={REFLECTION_LAYER}
-          blur={[tweaks.floorBlurX, tweaks.floorBlurY]}
-          resolution={tweaks.floorResolution}
-          mixBlur={1.8}
-          mixStrength={tweaks.floorMixStrength}
-          roughness={tweaks.floorRoughness}
-          depthScale={tweaks.floorDepthScale}
-          minDepthThreshold={tweaks.floorMinDepthThreshold}
-          maxDepthThreshold={tweaks.floorMaxDepthThreshold}
-          color={tweaks.floorColor}
-          metalness={tweaks.floorMetalness}
-          envMapIntensity={0}
-          mirror={tweaks.floorMirror}
-        />
-      </mesh>
-      {tweaks.shadowOpacity > 0 && (
-        <ContactShadows
-          position={[0, 0.0, 0]}
-          opacity={tweaks.shadowOpacity}
-          scale={tweaks.shadowScale}
-          blur={tweaks.shadowBlur}
-          far={tweaks.shadowFar}
-          resolution={256}
-          color="#000000"
-        />
-      )}
-    </>
-  )
-}
-
 function Particles() {
   return (
     <>
@@ -475,16 +416,6 @@ function CameraController({ inspectMode }: { inspectMode: boolean }) {
     const targetLook = inspectMode ? new THREE.Vector3(0, 0.35, 0) : new THREE.Vector3(CAROUSEL_CENTER_X - 1.7, 1.15, 0)
     camera.lookAt(targetLook)
   })
-  return null
-}
-
-function SceneLayerController() {
-  const camera = useThree((state) => state.camera)
-
-  useEffect(() => {
-    camera.layers.enable(FLOOR_LAYER)
-  }, [camera])
-
   return null
 }
 
@@ -529,15 +460,6 @@ function StudioLighting() {
     tCentre.position.set(CAROUSEL_CENTER_X, tweaks.targetCenterY, 0)
     tLow.position.set(CAROUSEL_CENTER_X, tweaks.targetLowY, 0)
   }, [tCentre, tLow, tweaks.targetCenterY, tweaks.targetLowY])
-
-  useEffect(() => {
-    keyRef.current?.layers.enable(REFLECTION_LAYER)
-    fillRef.current?.layers.enable(REFLECTION_LAYER)
-    rimRef.current?.layers.enable(REFLECTION_LAYER)
-    leftAccentRef.current?.layers.enable(REFLECTION_LAYER)
-    rightAccentRef.current?.layers.enable(REFLECTION_LAYER)
-    eyeRef.current?.layers.enable(REFLECTION_LAYER)
-  }, [])
 
   const orbit = getOrbitPosition(tweaks.keyYaw, tweaks.keyPitch, tweaks.keyRadius, tweaks.targetCenterY)
   const keyPosition: [number, number, number] = [orbit[0] + CAROUSEL_CENTER_X, orbit[1], orbit[2]]
@@ -663,28 +585,6 @@ function SceneLevaControls() {
       labelRoughness: { value: sceneTweaks.labelRoughness, min: 0, max: 1, step: 0.01, onChange: (value) => updateSceneTweaks({ labelRoughness: value }) },
       labelEnvIntensity: { value: sceneTweaks.labelEnvIntensity, min: 0, max: 2, step: 0.01, onChange: (value) => updateSceneTweaks({ labelEnvIntensity: value }) },
     }),
-    Floor: folder({
-      floorReflectionSource: {
-        value: sceneTweaks.floorReflectionSource,
-        options: { Flat: "flat", Environment: "environment" },
-        onChange: (value) => updateSceneTweaks({ floorReflectionSource: value as "flat" | "environment" }),
-      },
-      floorMirror: { value: sceneTweaks.floorMirror, min: 0, max: 1, step: 0.01, onChange: (value) => updateSceneTweaks({ floorMirror: value }) },
-      floorMetalness: { value: sceneTweaks.floorMetalness, min: 0, max: 1, step: 0.01, onChange: (value) => updateSceneTweaks({ floorMetalness: value }) },
-      floorColor: { value: sceneTweaks.floorColor, onChange: (value) => updateSceneTweaks({ floorColor: value }) },
-      floorResolution: { value: sceneTweaks.floorResolution, min: 128, max: 2048, step: 128, onChange: (value) => updateSceneTweaks({ floorResolution: value }) },
-      floorMixStrength: { value: sceneTweaks.floorMixStrength, min: 0, max: 80, step: 1, onChange: (value) => updateSceneTweaks({ floorMixStrength: value }) },
-      floorRoughness: { value: sceneTweaks.floorRoughness, min: 0, max: 1, step: 0.01, onChange: (value) => updateSceneTweaks({ floorRoughness: value }) },
-      floorBlurX: { value: sceneTweaks.floorBlurX, min: 0, max: 600, step: 1, onChange: (value) => updateSceneTweaks({ floorBlurX: value }) },
-      floorBlurY: { value: sceneTweaks.floorBlurY, min: 0, max: 200, step: 1, onChange: (value) => updateSceneTweaks({ floorBlurY: value }) },
-      floorDepthScale: { value: sceneTweaks.floorDepthScale, min: 0.2, max: 3, step: 0.01, onChange: (value) => updateSceneTweaks({ floorDepthScale: value }) },
-      floorMinDepthThreshold: { value: sceneTweaks.floorMinDepthThreshold, min: 0, max: 2, step: 0.01, onChange: (value) => updateSceneTweaks({ floorMinDepthThreshold: value }) },
-      floorMaxDepthThreshold: { value: sceneTweaks.floorMaxDepthThreshold, min: 0.1, max: 3, step: 0.01, onChange: (value) => updateSceneTweaks({ floorMaxDepthThreshold: value }) },
-      shadowOpacity: { value: sceneTweaks.shadowOpacity, min: 0, max: 1, step: 0.01, onChange: (value) => updateSceneTweaks({ shadowOpacity: value }) },
-      shadowScale: { value: sceneTweaks.shadowScale, min: 2, max: 16, step: 0.5, onChange: (value) => updateSceneTweaks({ shadowScale: value }) },
-      shadowBlur: { value: sceneTweaks.shadowBlur, min: 0.2, max: 6, step: 0.1, onChange: (value) => updateSceneTweaks({ shadowBlur: value }) },
-      shadowFar: { value: sceneTweaks.shadowFar, min: 1, max: 12, step: 0.1, onChange: (value) => updateSceneTweaks({ shadowFar: value }) },
-    }),
     Post: folder({
       bloomIntensity: { value: sceneTweaks.bloomIntensity, min: 0, max: 1.5, step: 0.01, onChange: (value) => updateSceneTweaks({ bloomIntensity: value }) },
       bloomRadius: { value: sceneTweaks.bloomRadius, min: 0, max: 1.5, step: 0.01, onChange: (value) => updateSceneTweaks({ bloomRadius: value }) },
@@ -727,10 +627,8 @@ function SceneContent() {
         environmentRotation={[0, sceneTweaks.environmentRotationY, 0]}
       />
 
-      <SceneLayerController />
       <ToneMappingController />
       <CameraController inspectMode={inspectMode} />
-      <Floor />
       <Particles />
 
       {inspectMode ? <InspectScene game={selectedGame} /> : <Carousel items={visibleGames} />}
