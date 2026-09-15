@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import { Canvas, useThree } from '@react-three/fiber';
-import { Environment, ContactShadows, Stars, Sparkles, Loader } from '@react-three/drei';
+import { Environment, ContactShadows, Stars, Sparkles } from '@react-three/drei';
 import { GAMES } from '../constants';
 import { Cartridge } from './Cartridge';
 
@@ -94,7 +94,6 @@ export const Scene: React.FC<SceneProps> = (props) => {
           </Suspense>
         </Canvas>
       </div>
-      <Loader />
     </>
   );
 };
