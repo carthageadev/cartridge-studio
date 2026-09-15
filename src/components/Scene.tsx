@@ -313,8 +313,19 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
   )
 }
 
+const CULL_RADIUS = 3
+
 function Carousel({ items }: { items: Game[] }) {
-  return <group>{items.map((game, i) => <CartridgeSlot key={game.id} game={game} index={i} />)}</group>
+  const selectedIndex = useStore((s) => s.selectedIndex)
+  return (
+    <group>
+      {items.map((game, i) =>
+        Math.abs(i - selectedIndex) <= CULL_RADIUS ? (
+          <CartridgeSlot key={game.id} game={game} index={i} />
+        ) : null
+      )}
+    </group>
+  )
 }
 
 /* ================================================================== */
