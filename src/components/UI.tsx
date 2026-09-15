@@ -80,11 +80,11 @@ function StatusBar({ onLibrary, inspectMode, setInspectMode }: { onLibrary: () =
         <nav className="hidden md:flex flex-1 justify-center min-w-0 pointer-events-auto">
           <div className="flex items-center gap-5">
             {SORT_MODES.map((m) => (
-              <button key={m.key} onClick={() => setSortMode(m.key)} className={cn("px-1 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] transition-colors whitespace-nowrap border-b-2", sortMode === m.key ? "text-white border-white" : "text-white/40 border-transparent hover:text-white")}>
+              <button key={m.key} onClick={() => setSortMode(m.key)} className={cn("px-1 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] transition-colors whitespace-nowrap border-b-2", sortMode === m.key ? "text-white border-console" : "text-white/40 border-transparent hover:text-white")}>
                 {m.label}
               </button>
             ))}
-            <button onClick={() => setOnlyFavorites(!onlyFavorites)} className={cn("px-1 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] transition-colors flex items-center gap-1.5 whitespace-nowrap border-b-2", onlyFavorites ? "text-white border-white" : "text-white/40 border-transparent hover:text-white")}>
+            <button onClick={() => setOnlyFavorites(!onlyFavorites)} className={cn("px-1 py-1.5 text-[11px] font-bold uppercase tracking-[0.15em] transition-colors flex items-center gap-1.5 whitespace-nowrap border-b-2", onlyFavorites ? "text-white border-console" : "text-white/40 border-transparent hover:text-white")}>
               <Heart className={cn("w-3 h-3", onlyFavorites && "fill-current")} /> Favs
             </button>
           </div>
@@ -197,7 +197,7 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div>
-            <DialogTitle className="flex items-center gap-2 text-xl font-display"><Library className="w-5 h-5 text-indigo-400" /> Cartridge Library</DialogTitle>
+            <DialogTitle className="flex items-center gap-2 text-xl font-display"><Library className="w-5 h-5 text-console" /> Cartridge Library</DialogTitle>
             <DialogDescription>Add, edit or remove games from your personal collection.</DialogDescription>
           </div>
           <Button onClick={openAdd} className="rounded-xl text-xs"><Plus className="w-4 h-4" /> Add Game</Button>
@@ -244,7 +244,7 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
               const isFav = favorites.includes(game.id)
               const isSelected = i === selectedIndex
               return (
-                <div key={game.id} onClick={() => { setSelectedIndex(i); onClose() }} className={cn("group relative rounded-2xl border overflow-hidden cursor-pointer transition-all", isSelected ? "border-indigo-400/50 ring-2 ring-indigo-500/30 shadow-xl shadow-indigo-500/10" : "border-transparent hover:border-white/15")}>
+                <div key={game.id} onClick={() => { setSelectedIndex(i); onClose() }} className={cn("group relative rounded-2xl border overflow-hidden cursor-pointer transition-all", isSelected ? "border-console/60 ring-2 ring-console/30 shadow-xl shadow-console/10" : "border-transparent hover:border-white/15")}>
                   <div className="relative aspect-[3/4] bg-black/40">
                     <img src={game.coverArt} alt={game.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -256,7 +256,7 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
                       <button onClick={(e) => handleRemove(game.id, e)} className="p-1.5 rounded-lg bg-black/50 backdrop-blur text-white/70 hover:text-red-400"><Trash2 className="w-3.5 h-3.5" /></button>
                     </div>
 
-                    {isSelected && <div className="absolute top-2 left-2 text-[9px] font-bold px-2 py-0.5 rounded-md bg-indigo-500 text-white tracking-wider shadow-lg">NOW</div>}
+                    {isSelected && <div className="absolute top-2 left-2 text-[9px] font-bold px-2 py-0.5 bg-console text-black tracking-wider">NOW</div>}
 
                     <div className="absolute bottom-0 left-0 right-0 p-3">
                       <div className="text-white text-xs font-bold leading-tight line-clamp-2 drop-shadow-md">{game.title}</div>
