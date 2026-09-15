@@ -395,6 +395,7 @@
 <script type="module">
 import * as THREE from "three";
 import { GLTFLoader } from "three/addons/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { upgradeSticker } from "./js/covers.js";
@@ -568,8 +569,12 @@ async function loadAssets() {
   setStatus('Fetching cartridge model…'); setProgress(0.08);
   const timeout = (ms) => new Promise((_, rej) => setTimeout(() => rej(new Error('timeout')), ms));
   try {
+    const draco = new DRACOLoader();
+    draco.setDecoderPath("./vendor/draco/");
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.setDRACOLoader(draco);
     const gltf = await Promise.race([
-      new GLTFLoader().loadAsync(MODEL_URL, (e) => { if (e.total) setProgress(0.08 + (e.loaded / e.total) * 0.6); }),
+      gltfLoader.loadAsync(MODEL_URL, (e) => { if (e.total) setProgress(0.08 + (e.loaded / e.total) * 0.6); }),
       timeout(20000),
     ]);
     setStatus('Applying plastic finish…'); setProgress(0.75);
