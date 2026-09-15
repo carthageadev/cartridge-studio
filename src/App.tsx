@@ -72,7 +72,7 @@ function Gallery() {
       return {
         node: clone,
         position: [(col - (COLS - 1) / 2) * 3.1, ((COUNT / COLS - 1) / 2 - row) * 3.4, 0] as const,
-        rotationY: Math.PI / 2 + (i % 3 - 1) * 0.18,
+        rotationY: Math.PI + (i % 3 - 1) * 0.18,
         scale,
       };
     });
