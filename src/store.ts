@@ -262,13 +262,14 @@ export const useStore = create<Store>()(
       },
       next: () =>
         set((s) => {
-          const visible = s.getVisibleGames()
-          return { selectedIndex: Math.min(s.selectedIndex + 1, Math.max(visible.length - 1, 0)) }
+          const count = Math.max(s.getVisibleGames().length, 1)
+          return { selectedIndex: (s.selectedIndex + 1) % count }
         }),
       prev: () =>
-        set((s) => ({
-          selectedIndex: Math.max(s.selectedIndex - 1, 0),
-        })),
+        set((s) => {
+          const count = Math.max(s.getVisibleGames().length, 1)
+          return { selectedIndex: (s.selectedIndex - 1 + count) % count }
+        }),
       visibleCount: initialGames.length,
       setVisibleCount: (count: number) =>
         set((s) => ({

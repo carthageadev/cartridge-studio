@@ -35,10 +35,26 @@ const SCENE_BG = "#000000"
 const TARGET_HEIGHT = 2.8
 const LERP_SPEED = 5
 const CARTRIDGE_FACE_ROTATION = Math.PI / 2
-const CAROUSEL_GAP = 4.15
-const CAROUSEL_DEPTH_STEP = 0.52
+/* Vertical carousel geometry. Slots wrap around the selection, so the
+   stack reads as infinite in both directions. */
+const CAROUSEL_GAP = 2.15
+const CAROUSEL_STEP = 1.0
+const CAROUSEL_DEPTH_STEP = 0.55
+const CAROUSEL_CENTER_X = 1.6
+const CAROUSEL_SLANT = -0.05
 const REFLECTION_LAYER = 1
 const FLOOR_LAYER = 2
+
+/* Signed distance from the selection, wrapped to the nearest copy.
+   Keeps the carousel looping instead of ending at either edge. */
+function wrappedOffset(index: number, selectedIndex: number, count: number): number {
+  if (count <= 0) return 0
+  let offset = index - selectedIndex
+  const half = count / 2
+  if (offset > half) offset -= count
+  if (offset < -half) offset += count
+  return offset
+}
 
 function getOrbitPosition(yaw: number, pitch: number, radius: number, targetY: number): [number, number, number] {
   const cosPitch = Math.cos(pitch)
@@ -188,7 +204,7 @@ function Cartridge3D({ game }: { game: Game }) {
 /*  On release -> smoothly snaps back to identity rotation.            */
 /* ================================================================== */
 
-function CartridgeSlot({ game, index }: { game: Game; index: number }) {
+function CartridgeSlot({ game, index, count }: { game: Game; index: number; count: number }) {
   const ref = useRef<THREE.Group>(null!)
   const selectedIndex = useStore((s) => s.selectedIndex)
   const setSelectedIndex = useStore((s) => s.setSelectedIndex)
@@ -203,18 +219,18 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
   const lastPointer = useRef({ x: 0, y: 0 })
 
   const target = useMemo(() => {
-    const offset = index - selectedIndex
-    if (offset === 0) return { x: 0, y: 0.28, z: 1.95, rotY: 0, scale: 1.09 }
+    const offset = wrappedOffset(index, selectedIndex, count)
+    if (offset === 0) return { y: 0.2, z: 1.9, rotX: 0, rotY: 0, scale: 0.82 }
     const sign = Math.sign(offset)
     const abs = Math.abs(offset)
     return {
-      x: sign * (CAROUSEL_GAP + (abs - 1) * 1.32),
-      y: 0,
+      y: -sign * (CAROUSEL_GAP + (abs - 1) * CAROUSEL_STEP),
       z: -0.9 - (abs - 1) * CAROUSEL_DEPTH_STEP,
-      rotY: -sign * Math.PI * 0.26,
-      scale: Math.max(0.61, 0.83 - (abs - 1) * 0.05),
+      rotX: sign * 0.32,
+      rotY: -sign * 0.28,
+      scale: Math.max(0.5, 0.68 - (abs - 1) * 0.07),
     }
-  }, [index, selectedIndex])
+  }, [index, selectedIndex, count])
 
   // Global pointer listeners while dragging the selected cartridge
   useEffect(() => {
@@ -244,21 +260,21 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
     }
 
     // Position
-    ref.current.position.x = l(ref.current.position.x, target.x, sp * delta)
     ref.current.position.z = l(ref.current.position.z, target.z, sp * delta)
     let ty = target.y
     if (isSelected && !isDragging) ty += Math.sin(state.clock.elapsedTime * 1.85) * 0.04
-    if (hovered && !isSelected) ty += 0.18
+    if (hovered && !isSelected) ty -= Math.sign(target.y) * 0.16
     ref.current.position.y = l(ref.current.position.y, ty, sp * delta)
 
     // Rotation (base from carousel + face rotation + drag offset)
     let targetRotY = target.rotY + CARTRIDGE_FACE_ROTATION
-    let targetRotX = 0
+    let targetRotX = target.rotX
     if (isSelected) {
       targetRotY += dragOffset.current.y
-      targetRotX = dragOffset.current.x
+      targetRotX += dragOffset.current.x
     } else if (hovered) {
-      targetRotY *= 0.6
+      targetRotY = target.rotY * 0.6 + CARTRIDGE_FACE_ROTATION
+      targetRotX = target.rotX * 0.6
     }
     ref.current.rotation.y = l(ref.current.rotation.y, targetRotY, (isDragging ? 12 : sp) * delta)
     ref.current.rotation.x = l(ref.current.rotation.x, targetRotX, (isDragging ? 12 : sp) * delta)
@@ -316,11 +332,12 @@ const CULL_RADIUS = 3
 
 function Carousel({ items }: { items: Game[] }) {
   const selectedIndex = useStore((s) => s.selectedIndex)
+  const count = items.length
   return (
-    <group>
+    <group position={[CAROUSEL_CENTER_X, 0, 0]} rotation={[0, 0, CAROUSEL_SLANT]}>
       {items.map((game, i) =>
-        Math.abs(i - selectedIndex) <= CULL_RADIUS ? (
-          <CartridgeSlot key={game.id} game={game} index={i} />
+        Math.abs(wrappedOffset(i, selectedIndex, count)) <= CULL_RADIUS ? (
+          <CartridgeSlot key={game.id} game={game} index={i} count={count} />
         ) : null
       )}
     </group>
@@ -455,7 +472,7 @@ function CameraController({ inspectMode }: { inspectMode: boolean }) {
       ? new THREE.Vector3(0, 0.5, 5.2)
       : new THREE.Vector3(0, browseY, browseZ)
     camera.position.lerp(targetPos, 2.5 * delta)
-    const targetLook = inspectMode ? new THREE.Vector3(0, 0.35, 0) : new THREE.Vector3(0, 1.3, 0)
+    const targetLook = inspectMode ? new THREE.Vector3(0, 0.35, 0) : new THREE.Vector3(CAROUSEL_CENTER_X - 1.7, 1.15, 0)
     camera.lookAt(targetLook)
   })
   return null
@@ -509,8 +526,8 @@ function StudioLighting() {
   }, [scene, tCentre, tLow])
 
   useEffect(() => {
-    tCentre.position.set(0, tweaks.targetCenterY, 0)
-    tLow.position.set(0, tweaks.targetLowY, 0)
+    tCentre.position.set(CAROUSEL_CENTER_X, tweaks.targetCenterY, 0)
+    tLow.position.set(CAROUSEL_CENTER_X, tweaks.targetLowY, 0)
   }, [tCentre, tLow, tweaks.targetCenterY, tweaks.targetLowY])
 
   useEffect(() => {
@@ -522,7 +539,8 @@ function StudioLighting() {
     eyeRef.current?.layers.enable(REFLECTION_LAYER)
   }, [])
 
-  const keyPosition = getOrbitPosition(tweaks.keyYaw, tweaks.keyPitch, tweaks.keyRadius, tweaks.targetCenterY)
+  const orbit = getOrbitPosition(tweaks.keyYaw, tweaks.keyPitch, tweaks.keyRadius, tweaks.targetCenterY)
+  const keyPosition: [number, number, number] = [orbit[0] + CAROUSEL_CENTER_X, orbit[1], orbit[2]]
 
   return (
     <>
@@ -547,7 +565,7 @@ function StudioLighting() {
       <spotLight
         ref={fillRef}
         target={tCentre}
-        position={[tweaks.fillPosX, tweaks.fillPosY, tweaks.fillPosZ]}
+        position={[tweaks.fillPosX + CAROUSEL_CENTER_X, tweaks.fillPosY, tweaks.fillPosZ]}
         angle={tweaks.fillAngle}
         penumbra={tweaks.fillPenumbra}
         intensity={tweaks.fillIntensity}
@@ -559,7 +577,7 @@ function StudioLighting() {
       <spotLight
         ref={rimRef}
         target={tLow}
-        position={[tweaks.rimPosX, tweaks.rimPosY, tweaks.rimPosZ]}
+        position={[tweaks.rimPosX + CAROUSEL_CENTER_X, tweaks.rimPosY, tweaks.rimPosZ]}
         angle={tweaks.rimAngle}
         penumbra={tweaks.rimPenumbra}
         intensity={tweaks.rimIntensity}
@@ -568,12 +586,12 @@ function StudioLighting() {
         color="#c8d4ff"
       />
 
-      <pointLight ref={leftAccentRef} position={[tweaks.leftAccentPosX, tweaks.leftAccentPosY, tweaks.leftAccentPosZ]} intensity={tweaks.leftAccentIntensity} color="#7dd3fc" decay={2} distance={18} />
-      <pointLight ref={rightAccentRef} position={[tweaks.rightAccentPosX, tweaks.rightAccentPosY, tweaks.rightAccentPosZ]} intensity={tweaks.rightAccentIntensity} color="#f9a8d4" decay={2} distance={18} />
+      <pointLight ref={leftAccentRef} position={[tweaks.leftAccentPosX + CAROUSEL_CENTER_X, tweaks.leftAccentPosY, tweaks.leftAccentPosZ]} intensity={tweaks.leftAccentIntensity} color="#7dd3fc" decay={2} distance={18} />
+      <pointLight ref={rightAccentRef} position={[tweaks.rightAccentPosX + CAROUSEL_CENTER_X, tweaks.rightAccentPosY, tweaks.rightAccentPosZ]} intensity={tweaks.rightAccentIntensity} color="#f9a8d4" decay={2} distance={18} />
       {tweaks.showEyeLight && (
         <pointLight
           ref={eyeRef}
-          position={[0, tweaks.eyeLightHeight, tweaks.eyeLightDepth]}
+          position={[CAROUSEL_CENTER_X, tweaks.eyeLightHeight, tweaks.eyeLightDepth]}
           intensity={tweaks.eyeLightIntensity}
           color="#ffffff"
           decay={2}
