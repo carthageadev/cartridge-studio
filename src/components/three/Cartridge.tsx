@@ -103,24 +103,25 @@ export function CartridgeModel({ labelUrl }: CartridgeModelProps) {
   const gltf = useGLTF(model)
   const labelTex = useLabelTexture(labelUrl)
 
-  const shellMaps = useTexture({
+  // Destructure so the memo below depends on the texture instances, not on a
+  // fresh object created every render (that re-cloned the model on every step).
+  const { map, normalMap, roughnessMap } = useTexture({
     map: bodyBase,
     normalMap: bodyNormal,
     roughnessMap: bodyRoughness,
   })
 
   const { root, scale, center, labelMat } = useMemo(() => {
-    // Textures are cached by drei, so configuring them repeatedly is harmless.
-    configureColorTexture(shellMaps.map)
-    configureDataTexture(shellMaps.normalMap)
-    configureDataTexture(shellMaps.roughnessMap)
+    configureColorTexture(map)
+    configureDataTexture(normalMap)
+    configureDataTexture(roughnessMap)
 
     const root = gltf.scene.clone(true)
 
     const bodyMat = new THREE.MeshStandardMaterial({
-      map: shellMaps.map,
-      normalMap: shellMaps.normalMap,
-      roughnessMap: shellMaps.roughnessMap,
+      map,
+      normalMap,
+      roughnessMap,
       metalness: 0.05,
       envMapIntensity: 0.9,
     })
@@ -145,7 +146,7 @@ export function CartridgeModel({ labelUrl }: CartridgeModelProps) {
     const size = box.getSize(new THREE.Vector3())
     const center = box.getCenter(new THREE.Vector3())
     return { root, scale: CART_WIDTH / size.x, center, labelMat }
-  }, [gltf, shellMaps])
+  }, [gltf, map, normalMap, roughnessMap])
 
   useEffect(() => {
     labelMat.map = labelTex
