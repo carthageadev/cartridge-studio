@@ -392,7 +392,7 @@ export function UI() {
       {/* Left centre - game readout */}
       <div className={cn("absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 z-20 max-w-lg transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
         <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
-          <span className="text-console">{game.genre}</span>
+          <span style={{ color: game.color }}>{game.genre}</span>
           <span className="w-px h-3 bg-white/15" />
           <span>{game.year}</span>
           <span className="w-px h-3 bg-white/15" />
