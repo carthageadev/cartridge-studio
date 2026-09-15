@@ -7,6 +7,7 @@ import {
 import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Slider, Switch } from "./primitives"
 import { useProgress } from "@react-three/drei"
 import { cn } from "../utils/cn"
+import { readableColor } from "../utils/color"
 
 const SORT_MODES = [
   { key: "featured", label: "Featured" },
@@ -372,6 +373,7 @@ export function UI() {
   const getVisibleGames = useStore((s) => s.getVisibleGames)
   const visibleGames = getVisibleGames()
   const game = visibleGames[selectedIndex] ?? visibleGames[0]
+  const accent = game ? readableColor(game.color) : "#ffffff"
 
   useEffect(() => { setInfoVisible(false); const t = setTimeout(() => setInfoVisible(true), 150); return () => clearTimeout(t) }, [selectedIndex])
 
@@ -411,7 +413,7 @@ export function UI() {
       {/* Left centre - game readout */}
       <div className={cn("absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 z-20 max-w-lg transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
         <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
-          <span style={{ color: game.color }}>{game.genre}</span>
+          <span style={{ color: accent }}>{game.genre}</span>
           <span className="w-px h-3 bg-white/15" />
           <span>{game.year}</span>
           <span className="w-px h-3 bg-white/15" />
@@ -425,7 +427,7 @@ export function UI() {
         <div className="mt-3.5 flex items-center gap-3">
           <span className="text-white/40 text-xs font-medium uppercase tracking-[0.15em]">{game.developer}</span>
           <span className="w-px h-3 bg-white/10" />
-          <Stars rating={game.rating} color={game.color} />
+          <Stars rating={game.rating} color={accent} />
         </div>
       </div>
 
