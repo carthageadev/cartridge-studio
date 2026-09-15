@@ -228,7 +228,7 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
             {/* Main column - grid */}
             <div className="flex-1 min-w-0 flex flex-col min-h-0">
               {formOpen && (
-                <div className="mb-4 p-5 bg-white/[0.04] border border-white/10 animate-float-in shrink-0">
+                <div className="mb-4 p-5 bg-white/[0.04] border border-white/10 animate-fade-in shrink-0">
                   <div className="flex justify-between mb-4"><div className="font-bold text-white">{editing ? "Edit Cartridge" : "Add New Game"}</div><button onClick={closeForm} className="text-white/40 hover:text-white"><X className="w-4 h-4" /></button></div>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="Title" className="bg-white/5 border border-white/10 px-4 py-2.5 text-sm col-span-2" />

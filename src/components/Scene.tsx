@@ -1,10 +1,9 @@
 import { useRef, useMemo, useEffect, useState, Suspense } from "react"
 import { Canvas, useFrame, useThree } from "@react-three/fiber"
-import { Html, useCursor, useGLTF, Environment, MeshReflectorMaterial, Sparkles, ContactShadows } from "@react-three/drei"
+import { Html, useCursor, useGLTF, Environment, Sparkles, ContactShadows } from "@react-three/drei"
 import { EffectComposer, Bloom, Vignette } from "@react-three/postprocessing"
 import * as THREE from "three"
 import { button, folder, useControls } from "leva"
-import { Loader2 } from "lucide-react"
 import { LayeredReflectorMaterial } from "./LayeredReflectorMaterial"
 import { type Game } from "../data/games"
 import { useStore } from "../store"
@@ -303,8 +302,8 @@ function CartridgeSlot({ game, index }: { game: Game; index: number }) {
       <Cartridge3D game={game} />
       {(game.status === "pending" || game.status === "loading") && (
         <Html center position={[0, 0.95, 0.3]} zIndexRange={[12, 0]} distanceFactor={4.5}>
-          <div className="cart-badge">
-            <Loader2 size={13} className="spin" />
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-black/80 border border-white/15 text-white/60 font-mono text-[9px] tracking-[0.2em] whitespace-nowrap">
+            <span className="w-1.5 h-1.5 bg-console animate-[blink_1.2s_ease-in-out_infinite]" />
             FETCHING ART
           </div>
         </Html>

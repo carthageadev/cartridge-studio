@@ -51,17 +51,6 @@
 /*  Components                                                         */
 /* ================================================================== */
 @layer components {
-  .glass {
-    background: rgba(0, 0, 0, 0.6);
-    backdrop-filter: blur(20px) saturate(140%);
-    -webkit-backdrop-filter: blur(20px) saturate(140%);
-  }
-  .glass-strong {
-    background: rgba(8, 8, 8, 0.92);
-    backdrop-filter: blur(28px) saturate(140%);
-    -webkit-backdrop-filter: blur(28px) saturate(140%);
-  }
-
   /* Modals - centered with pure CSS (no Tailwind translate fighting keyframes) */
   .modal-overlay {
     position: fixed; inset: 0; z-index: 60;
@@ -108,7 +97,7 @@
 @layer utilities {
   .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
   .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .animate-float-in { animation: float-in 0.4s cubic-bezier(0.16, 1, 0.3, 1) both; }
+  .animate-fade-in { animation: fade-in 0.4s ease-out both; }
   /* Cover rail - horizontal strip, no visible scrollbar */
   .rail-scroll { scrollbar-width: none; -ms-overflow-style: none; }
   .rail-scroll::-webkit-scrollbar { display: none; }
@@ -117,12 +106,9 @@
 /* ================================================================== */
 /*  Keyframes                                                          */
 /* ================================================================== */
-@keyframes spin { to { transform: rotate(360deg); } }
-@keyframes float-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes blink { 0%, 100% { opacity: 0.25; } 50% { opacity: 1; } }
+@keyframes fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes modal-overlay-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes veil-out { from { opacity: 1; } to { opacity: 0; } }
-@keyframes modal-panel-in {
-  from { opacity: 0; transform: translate(-50%, -48%) scale(0.94); }
-  to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-}
+@keyframes modal-panel-in { from { opacity: 0; } to { opacity: 1; } }
