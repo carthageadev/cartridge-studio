@@ -1,3 +1,7 @@
+<div align="center">
+  <img width="1200" alt="Banner" src="banner.webp" />
+</div>
+
 # RetroFlow 64
 
 A browser based N64 game library with a 3D carousel of cartridges. Built with React Three Fiber and pulls cover art and metadata from ScreenScraper.
