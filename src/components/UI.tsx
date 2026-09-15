@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import { useStore } from "../store"
 import {
-  Search, Heart, Library, Info, X, BatteryMedium, BatteryLow, BatteryFull,
+  Search, Heart, Library, X, BatteryMedium, BatteryLow, BatteryFull,
   Wifi, Settings, Clock, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2
 } from "lucide-react"
 import { Button, Badge, Dialog, DialogContent, DialogTitle, DialogDescription, Tabs, TabsList, TabsTrigger, Slider, Switch } from "./primitives"
@@ -258,6 +258,42 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
   )
 }
 
+/* -- Cover rail - thumbnail strip synced to the 3D carousel -- */
+function CoverRail({ games, selectedIndex, onSelect }: { games: any[]; selectedIndex: number; onSelect: (i: number) => void }) {
+  const railRef = useRef<HTMLDivElement>(null)
+  const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
+
+  useEffect(() => {
+    const rail = railRef.current
+    const item = itemRefs.current[selectedIndex]
+    if (!rail || !item) return
+    const left = item.offsetLeft - rail.clientWidth / 2 + item.clientWidth / 2
+    rail.scrollTo({ left, behavior: "smooth" })
+  }, [selectedIndex])
+
+  return (
+    <div ref={railRef} className="rail-scroll overflow-x-auto overflow-y-hidden pointer-events-auto">
+      <div className="flex items-end gap-1.5 min-w-max px-5 sm:px-8 pb-3 pt-1 mx-auto" style={{ justifyContent: games.length > 14 ? "flex-start" : "center" }}>
+        {games.map((g: any, i: number) => (
+          <button
+            key={g.id}
+            ref={(el) => { itemRefs.current[i] = el }}
+            onClick={() => onSelect(i)}
+            aria-label={g.title}
+            title={g.title}
+            className={cn(
+              "relative shrink-0 overflow-hidden transition-all duration-300 ease-out",
+              i === selectedIndex ? "w-11 h-14 ring-2 ring-console opacity-100" : "w-7 h-9 ring-1 ring-white/10 opacity-40 hover:opacity-90"
+            )}
+          >
+            <img src={g.coverArt} alt="" className="w-full h-full object-cover" draggable={false} />
+          </button>
+        ))}
+      </div>
+    </div>
+  )
+}
+
 /* -- Main UI -- */
 export function UI() {
   const selectedIndex = useStore((s) => s.selectedIndex)
@@ -306,67 +342,91 @@ export function UI() {
 
       <StatusBar onLibrary={() => setLibraryOpen(true)} inspectMode={inspectMode} setInspectMode={setInspectMode} />
 
-      {/* Middle: arrows + inspect hint */}
+      {/* Middle: sharp square browse controls + inspect HUD */}
       <div className="relative flex-1 min-h-0">
         {!inspectMode && (
           <>
-            <button className={cn("absolute left-5 sm:left-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full glass flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all duration-300 pointer-events-auto cursor-pointer hover:scale-110 active:scale-95", selectedIndex === 0 && "opacity-0 pointer-events-none")} onClick={prev}><ChevronLeft className="w-6 h-6" /></button>
-            <button className={cn("absolute right-5 sm:right-8 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full glass flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all duration-300 pointer-events-auto cursor-pointer hover:scale-110 active:scale-95", selectedIndex === visibleGames.length - 1 && "opacity-0 pointer-events-none")} onClick={next}><ChevronRight className="w-6 h-6" /></button>
+            <button
+              onClick={prev}
+              aria-label="Previous cartridge"
+              className={cn("absolute left-3 sm:left-6 top-1/2 -translate-y-1/2 w-11 h-16 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 pointer-events-auto cursor-pointer", selectedIndex === 0 && "opacity-0 pointer-events-none")}
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
+            <button
+              onClick={next}
+              aria-label="Next cartridge"
+              className={cn("absolute right-3 sm:right-6 top-1/2 -translate-y-1/2 w-11 h-16 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 pointer-events-auto cursor-pointer", selectedIndex === visibleGames.length - 1 && "opacity-0 pointer-events-none")}
+            >
+              <ChevronRight className="w-5 h-5" />
+            </button>
           </>
         )}
-        {inspectMode && <div className="absolute top-4 left-1/2 -translate-x-1/2 pointer-events-none"><Badge className="bg-black/70 text-white/50 font-mono text-[10px] tracking-[0.2em]">ZOOM MODE · DRAG TO ROTATE</Badge></div>}
+        {inspectMode && <div className="absolute top-2 left-1/2 -translate-x-1/2 pointer-events-none"><Badge className="bg-black/70 text-white/50 font-mono text-[10px] tracking-[0.2em]">ZOOM · DRAG TO ROTATE</Badge></div>}
       </div>
 
-      {/* Bottom info - ultra clean, no heavy gradient, the beautiful 3D cartridges are the star */}
-      <div className={cn("relative transition-all duration-500 ease-out", infoVisible ? "translate-y-0 opacity-100" : "translate-y-4 opacity-0")}>
-        <div className="px-5 sm:px-8 pt-1 pb-3">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex justify-center flex-wrap gap-1.5 mb-3 pointer-events-auto">
-              {visibleGames.map((_: any, i: number) => <button key={i} onClick={() => setSelectedIndex(i)} className={cn("h-1.5 rounded-full transition-all duration-500", i === selectedIndex ? "bg-white w-7 shadow-lg shadow-white/20" : "bg-white/15 w-1.5 hover:bg-white/30")} />)}
-            </div>
+      {/* Console deck - cover rail over the info row, everything anchored to the bottom edge */}
+      <div className="relative z-20 shrink-0">
+        {!inspectMode && visibleGames.length > 1 && (
+          <CoverRail games={visibleGames} selectedIndex={selectedIndex} onSelect={setSelectedIndex} />
+        )}
 
-            <div className="flex items-end gap-5 sm:gap-10">
+        <div className="border-t border-white/[0.07] bg-gradient-to-t from-black/80 to-transparent">
+          <div className={cn("px-5 sm:px-8 pt-4 pb-5 transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
+            <div className="flex items-end justify-between gap-8">
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2 mb-1 flex-wrap">
-                  <Badge color={game.color}>{game.genre}</Badge>
-                  <span className="text-white/40 text-xs">{game.year}</span>
-                  <span className="text-white/20">·</span>
-                  <span className="text-white/40 text-xs">{game.players}</span>
+                <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
+                  <span className="text-console">{game.genre}</span>
+                  <span className="w-px h-3 bg-white/15" />
+                  <span>{game.year}</span>
+                  <span className="w-px h-3 bg-white/15" />
+                  <span>{game.players}</span>
                 </div>
-                <h2 className="font-display text-white text-2xl sm:text-4xl font-bold mb-1 tracking-tight leading-tight truncate" style={{ textShadow: `0 0 55px rgba(180,190,255,0.15), 0 2px 14px rgba(0,0,0,0.35)` }}>{game.title}</h2>
-                <p className="text-white/55 text-xs sm:text-sm leading-relaxed max-w-xl line-clamp-2">{game.description}</p>
-                <div className="flex items-center gap-3 mt-2">
+
+                <h2 className="mt-2 font-display text-white text-2xl sm:text-[34px] font-bold tracking-tight leading-none truncate">{game.title}</h2>
+
+                <div className="mt-2.5 flex items-center gap-3">
                   <span className="text-white/35 text-xs font-medium">{game.developer}</span>
                   <span className="w-px h-3 bg-white/10" />
                   <Stars rating={game.rating} color={game.color} />
                 </div>
-                <div className="mt-3 flex items-center gap-2 pointer-events-auto">
-                  <Button variant="outline" onClick={() => toggleFavorite(game.id)} className={cn("text-xs rounded-xl", favorites.includes(game.id) && "border-pink-500/40 text-pink-300 bg-pink-500/10")}><Heart className={cn("w-4 h-4", favorites.includes(game.id) && "fill-current")} />{favorites.includes(game.id) ? "Favorited" : "Favorite"}</Button>
-                  <Button variant="ghost" onClick={() => setInspectMode(!inspectMode)} className="text-xs rounded-xl"><Info className="w-4 h-4" />{inspectMode ? "Exit Zoom" : "Zoom In"}</Button>
+
+                <p className="mt-2.5 text-white/45 text-xs sm:text-sm leading-relaxed max-w-xl line-clamp-2">{game.description}</p>
+
+                <div className="mt-3.5 flex items-center gap-2 pointer-events-auto">
+                  <Button variant="outline" onClick={() => toggleFavorite(game.id)} className={cn("text-xs", favorites.includes(game.id) && "border-console/50 text-console bg-console/10")}>
+                    <Heart className={cn("w-4 h-4", favorites.includes(game.id) && "fill-current")} />
+                    {favorites.includes(game.id) ? "Favorited" : "Favorite"}
+                  </Button>
+                  <Button onClick={() => setInspectMode(true)} className="text-xs"><ZoomIn className="w-4 h-4" /> Zoom In</Button>
+                  <span className="ml-1 font-mono text-white/30 text-[11px] tabular-nums">{String(selectedIndex + 1).padStart(2, "0")} / {String(visibleGames.length).padStart(2, "0")}</span>
                 </div>
               </div>
-              <div className="hidden sm:block text-right shrink-0">
-                <div className="text-[60px] font-black leading-none tracking-tighter" style={{ color: `${game.color}08` }}>{String(selectedIndex + 1).padStart(2, "0")}</div>
+
+              {/* Button hints - same row as the info, right anchored */}
+              <div className="hidden lg:flex flex-col items-end gap-1.5 shrink-0 pb-1 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
+                <span className="flex items-center gap-1.5"><KeyGlyph>←</KeyGlyph><KeyGlyph>→</KeyGlyph> Browse</span>
+                <span className="flex items-center gap-1.5"><KeyGlyph>Click</KeyGlyph> Select</span>
+                <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      {/* Bottom button hints - console style */}
-      <div className="relative z-20 flex items-center justify-center gap-5 pb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-white/35">
-        {inspectMode ? (
-          <>
-            <span className="flex items-center gap-1.5"><KeyGlyph>Drag</KeyGlyph> Rotate</span>
-            <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Exit zoom</span>
-          </>
-        ) : (
-          <>
-            <span className="flex items-center gap-1.5"><KeyGlyph>←</KeyGlyph><KeyGlyph>→</KeyGlyph> Browse</span>
-            <span className="flex items-center gap-1.5"><KeyGlyph>Click</KeyGlyph> Select</span>
-            <span className="hidden sm:flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
-          </>
-        )}
+        {/* Mobile hints */}
+        <div className="lg:hidden flex items-center justify-center gap-5 pb-3 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
+          {inspectMode ? (
+            <>
+              <span className="flex items-center gap-1.5"><KeyGlyph>Drag</KeyGlyph> Rotate</span>
+              <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Exit</span>
+            </>
+          ) : (
+            <>
+              <span className="flex items-center gap-1.5"><KeyGlyph>←</KeyGlyph><KeyGlyph>→</KeyGlyph> Browse</span>
+              <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
+            </>
+          )}
+        </div>
       </div>
 
       <LibraryPanel open={libraryOpen} onClose={() => setLibraryOpen(false)} />
