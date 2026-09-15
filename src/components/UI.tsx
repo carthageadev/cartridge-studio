@@ -370,9 +370,18 @@ export function UI() {
 
       {/* Bottom button hints - console style */}
       <div className="relative z-20 flex items-center justify-center gap-5 pb-4 font-mono text-[10px] uppercase tracking-[0.2em] text-white/35">
-        <span className="flex items-center gap-1.5"><KeyGlyph>←</KeyGlyph><KeyGlyph>→</KeyGlyph> Browse</span>
-        <span className="flex items-center gap-1.5"><KeyGlyph>Click</KeyGlyph> Select</span>
-        <span className="hidden sm:flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
+        {inspectMode ? (
+          <>
+            <span className="flex items-center gap-1.5"><KeyGlyph>Drag</KeyGlyph> Rotate</span>
+            <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Exit zoom</span>
+          </>
+        ) : (
+          <>
+            <span className="flex items-center gap-1.5"><KeyGlyph>←</KeyGlyph><KeyGlyph>→</KeyGlyph> Browse</span>
+            <span className="flex items-center gap-1.5"><KeyGlyph>Click</KeyGlyph> Select</span>
+            <span className="hidden sm:flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
+          </>
+        )}
       </div>
 
       <LibraryPanel open={libraryOpen} onClose={() => setLibraryOpen(false)} />
