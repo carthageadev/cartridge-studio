@@ -4,9 +4,9 @@
 /*  Design tokens                                                      */
 /* ================================================================== */
 @theme {
-  --color-bg: #05050c;
-  --color-surface: #0c0c18;
-  --color-elevated: #131324;
+  --color-bg: #000000;
+  --color-surface: #0a0a0a;
+  --color-elevated: #111111;
   --color-line: rgba(255, 255, 255, 0.08);
   --color-line-strong: rgba(255, 255, 255, 0.14);
   --color-ink: #f5f5ff;
@@ -31,6 +31,7 @@
     -moz-osx-font-smoothing: grayscale;
   }
   body { margin: 0; }
+  *, *::before, *::after { border-radius: 0 !important; }
   ::selection { background: rgba(99, 102, 241, 0.4); color: white; }
   ::-webkit-scrollbar { width: 6px; height: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -46,16 +47,14 @@
 /* ================================================================== */
 @layer components {
   .glass {
-    background: rgba(12, 12, 24, 0.66);
+    background: rgba(0, 0, 0, 0.6);
     backdrop-filter: blur(20px) saturate(140%);
     -webkit-backdrop-filter: blur(20px) saturate(140%);
-    border: 1px solid var(--color-line);
   }
   .glass-strong {
-    background: rgba(19, 19, 36, 0.92);
+    background: rgba(8, 8, 8, 0.92);
     backdrop-filter: blur(28px) saturate(140%);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
-    border: 1px solid var(--color-line-strong);
   }
 
   /* Modals - centered with pure CSS (no Tailwind translate fighting keyframes) */
@@ -76,17 +75,22 @@
     max-height: calc(100vh - 4rem);
     overflow-y: auto;
 
-    border-radius: 2rem;
+    border-radius: 0;
     padding: 1.5rem;
-    background: rgba(19, 19, 36, 0.94);
+    background: #000000;
     backdrop-filter: blur(28px) saturate(140%);
     -webkit-backdrop-filter: blur(28px) saturate(140%);
-    border: 1px solid rgba(255, 255, 255, 0.12);
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.04),
       0 24px 80px rgba(0, 0, 0, 0.7);
   }
   .modal-panel.modal-wide { max-width: 56rem; }
+  /* Fullscreen library - console style, edge to edge */
+  .modal-panel.modal-wide.modal-tall {
+    left: 0; top: 0; transform: none;
+    width: 100%; max-width: none;
+    height: 100dvh; max-height: none;
+    animation-name: modal-fade-in;
+  }
   .modal-panel.modal-tall {
     max-height: calc(100vh - 3rem);
     height: calc(100vh - 3rem);
@@ -108,6 +112,7 @@
 @keyframes spin { to { transform: rotate(360deg); } }
 @keyframes float-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
 @keyframes modal-overlay-in { from { opacity: 0; } to { opacity: 1; } }
+@keyframes modal-fade-in { from { opacity: 0; } to { opacity: 1; } }
 @keyframes modal-panel-in {
   from { opacity: 0; transform: translate(-50%, -48%) scale(0.94); }
   to   { opacity: 1; transform: translate(-50%, -50%) scale(1); }

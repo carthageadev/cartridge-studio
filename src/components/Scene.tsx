@@ -31,7 +31,7 @@ if (typeof fetch !== 'undefined') {
 } else { _3dBaseReadyResolve() }
 
 const FALLBACK_COVER = `/no-image.svg`
-const SCENE_BG = "#07111c"
+const SCENE_BG = "#000000"
 
 const TARGET_HEIGHT = 2.8
 const LERP_SPEED = 5

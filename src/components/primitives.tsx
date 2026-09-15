@@ -16,7 +16,7 @@ export const Button = React.forwardRef<
   const styles = {
     primary: "bg-white text-black hover:bg-white/90 shadow-lg shadow-white/10",
     ghost: "bg-white/5 text-white/80 hover:bg-white/10 hover:text-white",
-    outline: "border border-white/10 bg-transparent text-white/80 hover:bg-white/5 hover:border-white/20",
+    outline: "bg-white/5 text-white/80 hover:bg-white/10",
     danger: "bg-red-500/15 text-red-400 border border-red-500/20 hover:bg-red-500/25",
   }
   return <button ref={ref} className={cn(base, styles[variant], className)} {...props} />
@@ -28,7 +28,7 @@ export function Badge({ children, className, color }: { children: React.ReactNod
   return (
     <span
       className={cn("inline-flex items-center rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider", className)}
-      style={color ? { backgroundColor: `${color}18`, color, border: `1px solid ${color}35` } : {}}
+      style={color ? { backgroundColor: `${color}22`, color } : {}}
     >
       {children}
     </span>

@@ -234,12 +234,12 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
 
         {/* Grid */}
         <div className="flex-1 overflow-y-auto -mx-1 px-1">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 2xl:grid-cols-8 gap-3">
             {visibleGames.map((game: any, i: number) => {
               const isFav = favorites.includes(game.id)
               const isSelected = i === selectedIndex
               return (
-                <div key={game.id} onClick={() => { setSelectedIndex(i); onClose() }} className={cn("group relative rounded-2xl border overflow-hidden cursor-pointer transition-all", isSelected ? "border-indigo-400/50 ring-2 ring-indigo-500/30 shadow-xl shadow-indigo-500/10" : "border-white/[0.06] hover:border-white/20")}>
+                <div key={game.id} onClick={() => { setSelectedIndex(i); onClose() }} className={cn("group relative rounded-2xl border overflow-hidden cursor-pointer transition-all", isSelected ? "border-indigo-400/50 ring-2 ring-indigo-500/30 shadow-xl shadow-indigo-500/10" : "border-transparent hover:border-white/15")}>
                   <div className="relative aspect-[3/4] bg-black/40">
                     <img src={game.coverArt} alt={game.title} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
@@ -310,7 +310,7 @@ export function UI() {
   return (
     <div className="absolute inset-0 flex flex-col z-10 select-none pointer-events-none">
       {/* Faint neutral ambient glow */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 50%, rgba(180,190,255,0.06) 0%, transparent 70%)` }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 50% 60%, ${game.color}1f 0%, transparent 70%)` }} />
 
       <StatusBar onLibrary={() => setLibraryOpen(true)} inspectMode={inspectMode} setInspectMode={setInspectMode} />
 
@@ -371,7 +371,7 @@ export function LoadingScreen() {
   const [dots, setDots] = useState("")
   useEffect(() => { const id = setInterval(() => setDots((d) => (d.length >= 3 ? "" : d + ".")), 400); return () => clearInterval(id) }, [])
   return (
-    <div className="absolute inset-0 bg-[#08081a] flex flex-col items-center justify-center z-50">
+    <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-50">
       <div className="relative w-20 h-20 mb-8">
         <div className="absolute inset-0 rounded-full border-2 border-indigo-500/20 border-t-indigo-400 animate-spin" />
         <div className="absolute inset-2 rounded-full border-2 border-purple-500/20 border-b-purple-400" style={{ animation: "spin 1.2s linear infinite reverse" }} />
