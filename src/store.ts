@@ -5,7 +5,7 @@ import { sortLibraryGames, type LibrarySortMode } from "./utils/library"
 import { fetchGameInfo, searchGames } from "./api/screenscraper"
 
 const NO_IMAGE_COVER = "/no-image.svg"
-const SCENE_PRESET_VERSION = 6
+const SCENE_PRESET_VERSION = 7
 
 interface SceneTweaks {
   ambientIntensity: number
@@ -116,21 +116,21 @@ const defaultSettings: Store["settings"] = {
 
 const defaultSceneTweaks: SceneTweaks = {
   ambientIntensity: 0,
-  environmentIntensity: 0.4,
-  environmentRotationY: -0.96,
-  toneMappingExposure: 0.2,
-  targetCenterY: 2.67,
-  targetLowY: 2.58,
-  keyIntensity: 1.37,
-  keyYaw: 3.14,
-  keyPitch: 0.21,
+  environmentIntensity: 0.15,
+  environmentRotationY: 2.77,
+  toneMappingExposure: 1.5,
+  targetCenterY: -2,
+  targetLowY: -2,
+  keyIntensity: 0,
+  keyYaw: -3.14,
+  keyPitch: -1.4,
   keyRadius: 20,
   keyPosX: 4.8,
   keyPosY: 7.8,
   keyPosZ: 6.8,
-  fillIntensity: 3,
-  fillPosX: -6.4,
-  fillPosY: 5.1,
+  fillIntensity: 1.61,
+  fillPosX: -2,
+  fillPosY: 1,
   fillPosZ: 14.4,
   rimIntensity: 1.25,
   rimPosX: 0,
@@ -150,8 +150,8 @@ const defaultSceneTweaks: SceneTweaks = {
   eyeLightHeight: 2,
   eyeLightDepth: 6.2,
   keyAngle: 0.47,
-  keyPenumbra: 1,
-  keyDistance: 20,
+  keyPenumbra: 0,
+  keyDistance: 5,
   keyDecay: 0.94,
   fillAngle: 0.55,
   fillPenumbra: 1,
