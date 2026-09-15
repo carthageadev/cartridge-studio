@@ -484,11 +484,17 @@ export function LoadingScreen() {
   const pct = Math.round(progress)
   return (
     <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-50 animate-[modal-fade-in_0.4s_ease-out]">
-      <p className="font-display text-white/90 text-lg font-bold tracking-[0.35em] uppercase pl-2">N64 Flow</p>
-      <div className="mt-6 h-px w-44 bg-white/10 overflow-hidden">
-        <div className="h-full bg-white/90 transition-[width] duration-300 ease-out" style={{ width: `${pct}%` }} />
+      <div className="w-12 h-12 bg-white flex items-center justify-center">
+        <span className="text-black text-lg font-extrabold font-display">64</span>
       </div>
-      <p className="mt-3 font-mono text-white/30 text-[11px] tabular-nums">{pct}%</p>
+      <p className="mt-5 font-display text-white/90 text-sm font-bold tracking-[0.4em] uppercase pl-1">N64 Flow</p>
+      <div className="mt-7 h-[3px] w-52 bg-white/10 overflow-hidden">
+        <div className="h-full bg-console transition-[width] duration-200 ease-out" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="mt-3 w-52 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.25em] text-white/30">
+        <span>Loading</span>
+        <span className="tabular-nums">{pct}%</span>
+      </div>
     </div>
   )
 }
