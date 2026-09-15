@@ -54,32 +54,33 @@ function getOrbitPosition(yaw: number, pitch: number, radius: number, targetY: n
 /*  Texture helpers                                                    */
 /* ================================================================== */
 
-function useFlippedTexture(url: string): THREE.Texture {
-  const texture = useMemo(() => {
+/* ================================================================== */
+/*  Shared textures - one GPU upload per URL for the whole carousel     */
+/* ================================================================== */
+
+const sharedTexCache = new Map<string, THREE.Texture>()
+function getSharedTexture(url: string, srgb: boolean): THREE.Texture {
+  let t = sharedTexCache.get(url)
+  if (!t) {
     const loader = new THREE.TextureLoader()
     loader.setCrossOrigin("anonymous")
-    return loader.load(url)
-  }, [url])
-  useMemo(() => {
-    texture.flipY = false
-    texture.colorSpace = THREE.SRGBColorSpace
-    texture.anisotropy = 8
-    texture.needsUpdate = true
-  }, [texture])
+    t = loader.load(url)
+    t.flipY = false
+    if (srgb) t.colorSpace = THREE.SRGBColorSpace
+    t.anisotropy = 8
+    t.needsUpdate = true
+    sharedTexCache.set(url, t)
+  }
+  return t
+}
+
+function useFlippedTexture(url: string): THREE.Texture {
+  const texture = useMemo(() => getSharedTexture(url, true), [url])
   return texture
 }
 
 function useFlippedDataTexture(url: string): THREE.Texture {
-  const texture = useMemo(() => {
-    const loader = new THREE.TextureLoader()
-    loader.setCrossOrigin("anonymous")
-    return loader.load(url)
-  }, [url])
-  useMemo(() => {
-    texture.flipY = false
-    texture.anisotropy = 8
-    texture.needsUpdate = true
-  }, [texture])
+  const texture = useMemo(() => getSharedTexture(url, false), [url])
   return texture
 }
 
