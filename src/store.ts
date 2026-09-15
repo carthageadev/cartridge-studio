@@ -184,6 +184,11 @@ function isLegacySeedCover(coverArt: string | undefined) {
   return typeof coverArt === "string" && coverArt.startsWith("/images/")
 }
 
+/* True for art that was fetched for us from ScreenScraper. */
+function isResolvedCover(coverArt: string | undefined) {
+  return typeof coverArt === "string" && coverArt.startsWith("/api2")
+}
+
 function sleep(ms: number) {
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
@@ -321,7 +326,7 @@ export const useStore = create<Store>()(
     }),
     {
       name: "cartridge-flow-store-v1",
-      version: 6,
+      version: 7,
       storage: createJSONStorage(() => localStorage),
       migrate: (persistedState: any, version) => {
         if (!persistedState) return persistedState
@@ -350,14 +355,19 @@ export const useStore = create<Store>()(
 
         return {
           ...baseState,
-          library: persistedState.library.map((game: Game) => ({
-            ...game,
-            coverArt: isLegacySeedCover(game.coverArt) ? NO_IMAGE_COVER : (game.coverArt || NO_IMAGE_COVER),
-            status:
-              isLegacySeedCover(game.coverArt) || !game.coverArt
-                ? "pending"
-                : (game.status ?? "pending"),
-          })),
+          library: persistedState.library.map((game: Game) => {
+            /* Re-fetch auto-resolved art once so the new region priority
+               (European box art) takes effect. Custom cover URLs are kept. */
+            const refetch =
+              isLegacySeedCover(game.coverArt) ||
+              !game.coverArt ||
+              (version < 7 && isResolvedCover(game.coverArt))
+            return {
+              ...game,
+              coverArt: refetch ? NO_IMAGE_COVER : (game.coverArt || NO_IMAGE_COVER),
+              status: refetch ? "pending" : (game.status ?? "pending"),
+            }
+          }),
         }
       },
       partialize: (s) => ({

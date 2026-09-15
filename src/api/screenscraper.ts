@@ -17,14 +17,16 @@ export interface GameInfo {
 const CREDS_KEY = 'retroflow.creds.v1'
 const N64_SYSTEM_ID = '14'
 const REGION_PRIORITY = ['wor', 'us', 'eu', 'ss', 'jp']
+/* Box art: European labels first, US as the fallback. */
+const LABEL_REGION_PRIORITY = ['eu', 'us', 'wor', 'ss', 'jp']
 
 function asArray<T>(value: T | T[] | undefined | null): T[] {
   if (value == null) return []
   return Array.isArray(value) ? value : [value]
 }
 
-function pickByRegion<T extends { region?: string }>(items: T[]): T | undefined {
-  for (const region of REGION_PRIORITY) {
+function pickByRegion<T extends { region?: string }>(items: T[], priority: string[] = REGION_PRIORITY): T | undefined {
+  for (const region of priority) {
     const hit = items.find((i) => i.region === region)
     if (hit) return hit
   }
@@ -43,7 +45,7 @@ function pickYear(dates: any): string {
 
 function pickLabelUrl(medias: any): string | null {
   const textures = asArray<any>(medias).filter((m) => m.type === 'support-texture')
-  const best = pickByRegion(textures)
+  const best = pickByRegion(textures, LABEL_REGION_PRIORITY)
   return best?.url ? proxify(best.url) : null
 }
 
