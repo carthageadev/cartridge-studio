@@ -195,12 +195,12 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
       <DialogContent wide tall>
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex items-end justify-between mb-4">
           <div>
-            <DialogTitle className="flex items-center gap-2 text-xl font-display"><Library className="w-5 h-5 text-console" /> Cartridge Library</DialogTitle>
-            <DialogDescription>Add, edit or remove games from your personal collection.</DialogDescription>
+            <p className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/35 mb-1">Collection · {visibleGames.length} titles</p>
+            <DialogTitle className="flex items-center gap-2 text-2xl font-display"><Library className="w-5 h-5 text-console" /> Cartridge Library</DialogTitle>
           </div>
-          <Button onClick={openAdd} className="rounded-xl text-xs"><Plus className="w-4 h-4" /> Add Game</Button>
+          <Button onClick={openAdd} className="text-xs"><Plus className="w-4 h-4" /> Add Game</Button>
         </div>
 
         {/* Search + filters */}
