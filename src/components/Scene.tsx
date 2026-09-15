@@ -716,7 +716,7 @@ function SceneContent() {
 
       {inspectMode ? <InspectScene game={selectedGame} /> : <Carousel items={visibleGames} />}
 
-      <EffectComposer multisampling={8}>
+      <EffectComposer multisampling={4}>
         <Bloom
           intensity={sceneTweaks.bloomIntensity}
           luminanceThreshold={0.72}
@@ -746,7 +746,7 @@ export function Scene() {
         toneMapping: THREE.ACESFilmicToneMapping,
         toneMappingExposure: 0.86,
       }}
-      dpr={[1, 2]}
+      dpr={[1, 1.5]}
       camera={{ position: [0, 2.6, 9.0], fov: 32, near: 0.1, far: 80 }}
     >
       <fog attach="fog" args={[SCENE_BG, 18, 40]} />
