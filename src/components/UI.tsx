@@ -4,7 +4,7 @@ import {
   Search, Heart, Library, X, BatteryMedium, BatteryLow, BatteryFull,
   Wifi, Settings, Clock, ChevronUp, ChevronDown, ZoomIn, Plus, Pencil, Trash2
 } from "lucide-react"
-import { Button, Badge, Dialog, DialogContent, DialogTitle, DialogDescription, Slider, Switch } from "./primitives"
+import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Slider, Switch } from "./primitives"
 import { useProgress } from "@react-three/drei"
 import { cn } from "../utils/cn"
 
@@ -45,7 +45,13 @@ function KeyGlyph({ children }: { children: React.ReactNode }) {
 }
 
 /* -- Top status bar + settings -- */
-function StatusBar() {
+function StatusBar({ inspectMode, setInspectMode, onLibrary, isFavorite, onToggleFavorite }: {
+  inspectMode: boolean
+  setInspectMode: (v: boolean) => void
+  onLibrary: () => void
+  isFavorite: boolean
+  onToggleFavorite: () => void
+}) {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
   const [battery] = useState(84)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -61,19 +67,37 @@ function StatusBar() {
 
   return (
     <>
-      {/* -- Top bar - brand left, system readouts right -- */}
-      <header className="relative z-20 flex items-center justify-between gap-3 px-5 sm:px-8 pt-5 pointer-events-none">
-        <div className="flex items-center gap-3 shrink-0 pointer-events-auto">
-          <div className="w-9 h-9 bg-white flex items-center justify-center">
-            <span className="text-black text-sm font-extrabold font-display">64</span>
-          </div>
-          <div className="hidden sm:block">
-            <h1 className="font-display text-white text-base font-bold tracking-wide leading-tight">N64 Flow</h1>
-            <p className="font-mono text-white/40 text-[10px] tracking-[0.2em] uppercase">Cartridge OS</p>
-          </div>
+      {/* -- Top bar - system mark left, actions centre, status right -- */}
+      <header className="relative z-20 mx-5 sm:mx-8 mt-5 grid grid-cols-3 items-center gap-3 pointer-events-none">
+        <div className="w-9 h-9 bg-white flex items-center justify-center justify-self-start">
+          <span className="text-black text-sm font-extrabold font-display">64</span>
         </div>
 
-        <div className="flex items-center gap-2.5 px-2 py-1.5 font-mono pointer-events-auto">
+        <nav className="flex items-center justify-center gap-1 justify-self-center pointer-events-auto">
+          <button
+            onClick={onToggleFavorite}
+            className={cn("flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors", isFavorite ? "text-console" : "text-white/55 hover:text-white hover:bg-white/5")}
+          >
+            <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
+            <span className="hidden lg:inline">{isFavorite ? "Favorited" : "Favorite"}</span>
+          </button>
+          <button
+            onClick={() => setInspectMode(!inspectMode)}
+            className={cn("flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors", inspectMode ? "text-console" : "text-white/55 hover:text-white hover:bg-white/5")}
+          >
+            <ZoomIn className="w-4 h-4" />
+            <span className="hidden lg:inline">{inspectMode ? "Exit Zoom" : "Zoom"}</span>
+          </button>
+          <button
+            onClick={onLibrary}
+            className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-white/55 hover:text-white hover:bg-white/5 transition-colors"
+          >
+            <Library className="w-4 h-4" />
+            <span className="hidden lg:inline">Library</span>
+          </button>
+        </nav>
+
+        <div className="flex items-center gap-2.5 px-2 py-1.5 font-mono justify-self-end pointer-events-auto">
           <Wifi className="w-4 h-4 text-white/60 hidden sm:block" />
           <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium"><BatteryIcon level={battery} /><span className="hidden sm:inline">{battery}%</span></div>
           <div className="w-px h-4 bg-white/10 hidden sm:block" />
@@ -351,83 +375,44 @@ export function UI() {
   if (!game) return null
 
   return (
-    <div className="absolute inset-0 flex flex-col z-10 select-none pointer-events-none">
+    <div className="absolute inset-0 z-10 select-none pointer-events-none">
       {/* Faint neutral ambient glow */}
-      <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 62% 55%, ${game.color}1f 0%, transparent 70%)` }} />
+      <div className="absolute inset-0 pointer-events-none" style={{ background: `radial-gradient(ellipse at 62% 52%, ${game.color}1f 0%, transparent 70%)` }} />
       {/* Dip-to-black veil on zoom toggle - smooth crossfade */}
       <div key={String(inspectMode)} className="absolute inset-0 bg-black pointer-events-none animate-[veil-out_0.5s_ease-out_forwards]" />
 
-      <StatusBar />
+      <StatusBar
+        inspectMode={inspectMode}
+        setInspectMode={setInspectMode}
+        onLibrary={() => setLibraryOpen(true)}
+        isFavorite={favorites.includes(game.id)}
+        onToggleFavorite={() => toggleFavorite(game.id)}
+      />
 
-      {/* Middle: zoom HUD */}
-      <div className="relative flex-1 min-h-0">
-        {inspectMode && (
-          <>
-            <div className="absolute inset-x-8 inset-y-6 sm:inset-x-14 sm:inset-y-10 pointer-events-none">
-              {["top-0 left-0 border-t border-l", "top-0 right-0 border-t border-r", "bottom-0 left-0 border-b border-l", "bottom-0 right-0 border-b border-r"].map((pos) => (
-                <span key={pos} className={cn("absolute w-5 h-5 border-console/50", pos)} />
-              ))}
-            </div>
-            <div className="absolute top-1 left-1/2 -translate-x-1/2 pointer-events-none"><Badge className="bg-black/70 text-white/50 font-mono text-[10px] tracking-[0.2em]">ZOOM · DRAG TO ROTATE</Badge></div>
-          </>
-        )}
-      </div>
+      {/* Left centre - game readout */}
+      <div className={cn("absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 z-20 max-w-lg transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
+        <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
+          <span className="text-console">{game.genre}</span>
+          <span className="w-px h-3 bg-white/15" />
+          <span>{game.year}</span>
+          <span className="w-px h-3 bg-white/15" />
+          <span>{game.players}</span>
+          <span className="w-px h-3 bg-white/15" />
+          <span className="tabular-nums">{String(selectedIndex + 1).padStart(2, "0")} / {String(visibleGames.length).padStart(2, "0")}</span>
+        </div>
 
-      {/* Deck - info anchored bottom left, the carousel owns the right */}
-      <div className="relative z-20 shrink-0 bg-gradient-to-t from-black/80 to-transparent">
-        <div className={cn("pl-5 sm:pl-8 pr-16 pt-4 pb-5 transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
-          <div className="max-w-xl">
-            <div className="flex items-center gap-2.5 font-mono text-[10px] uppercase tracking-[0.25em] text-white/35">
-              <span className="text-console">{game.genre}</span>
-              <span className="w-px h-3 bg-white/15" />
-              <span>{game.year}</span>
-              <span className="w-px h-3 bg-white/15" />
-              <span>{game.players}</span>
-              <span className="w-px h-3 bg-white/15" />
-              <span className="tabular-nums">{String(selectedIndex + 1).padStart(2, "0")} / {String(visibleGames.length).padStart(2, "0")}</span>
-            </div>
+        <h2 className="mt-3 font-display text-white text-3xl sm:text-5xl font-bold tracking-tight leading-none">{game.title}</h2>
 
-            <h2 className="mt-2 font-display text-white text-2xl sm:text-[34px] font-bold tracking-tight leading-none truncate">{game.title}</h2>
-
-            <div className="mt-2.5 flex items-center gap-3">
-              <span className="text-white/35 text-xs font-medium">{game.developer}</span>
-              <span className="w-px h-3 bg-white/10" />
-              <Stars rating={game.rating} color={game.color} />
-            </div>
-
-            <p className="mt-2.5 text-white/45 text-xs sm:text-sm leading-relaxed line-clamp-2">{game.description}</p>
-
-            <div className="mt-3.5 flex items-center gap-2 pointer-events-auto">
-              <Button variant="outline" onClick={() => toggleFavorite(game.id)} className={cn("text-xs", favorites.includes(game.id) && "border-console/50 text-console bg-console/10")}>
-                <Heart className={cn("w-4 h-4", favorites.includes(game.id) && "fill-current")} />
-                {favorites.includes(game.id) ? "Favorited" : "Favorite"}
-              </Button>
-              <Button onClick={() => setInspectMode(!inspectMode)} className="text-xs"><ZoomIn className="w-4 h-4" /> {inspectMode ? "Exit Zoom" : "Zoom In"}</Button>
-              <Button variant="ghost" onClick={() => setLibraryOpen(true)} className="text-xs"><Library className="w-4 h-4" /> Library</Button>
-            </div>
-
-            <div className="mt-3 hidden sm:flex items-center gap-5 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
-              {inspectMode ? (
-                <>
-                  <span className="flex items-center gap-1.5"><KeyGlyph>Drag</KeyGlyph> Rotate</span>
-                  <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Exit zoom</span>
-                </>
-              ) : (
-                <>
-                  <span className="flex items-center gap-1.5"><KeyGlyph>↑</KeyGlyph><KeyGlyph>↓</KeyGlyph> Browse</span>
-                  <span className="flex items-center gap-1.5"><KeyGlyph>Scroll</KeyGlyph> Spin</span>
-                  <span className="flex items-center gap-1.5"><KeyGlyph>Click</KeyGlyph> Select</span>
-                  <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
-                </>
-              )}
-            </div>
-          </div>
+        <div className="mt-3.5 flex items-center gap-3">
+          <span className="text-white/40 text-xs font-medium uppercase tracking-[0.15em]">{game.developer}</span>
+          <span className="w-px h-3 bg-white/10" />
+          <Stars rating={game.rating} color={game.color} />
         </div>
       </div>
 
-      {/* Navigation cluster - bottom right corner */}
+      {/* Right centre - game list */}
       {!inspectMode && visibleGames.length > 1 && (
-        <div className="absolute right-4 sm:right-6 bottom-6 z-20 flex flex-col items-center gap-2 pointer-events-auto">
+        <div className="absolute right-5 sm:right-7 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto">
           <button
             onClick={prev}
             aria-label="Previous cartridge"
@@ -448,6 +433,32 @@ export function UI() {
         </div>
       )}
 
+      {/* Bottom centre - context line */}
+      <div className="absolute bottom-5 left-1/2 -translate-x-1/2 z-20 hidden sm:flex items-center gap-5 font-mono text-[10px] uppercase tracking-[0.2em] text-white/30">
+        {inspectMode ? (
+          <>
+            <span className="flex items-center gap-1.5"><KeyGlyph>Drag</KeyGlyph> Rotate</span>
+            <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Exit zoom</span>
+          </>
+        ) : (
+          <>
+            <span className="flex items-center gap-1.5"><KeyGlyph>↑</KeyGlyph><KeyGlyph>↓</KeyGlyph> Browse</span>
+            <span className="flex items-center gap-1.5"><KeyGlyph>Scroll</KeyGlyph> Spin</span>
+            <span className="flex items-center gap-1.5"><KeyGlyph>Click</KeyGlyph> Select</span>
+            <span className="flex items-center gap-1.5"><KeyGlyph>I</KeyGlyph> Zoom</span>
+          </>
+        )}
+      </div>
+
+      {/* Zoom HUD */}
+      {inspectMode && (
+        <div className="absolute inset-x-8 inset-y-6 sm:inset-x-14 sm:inset-y-10 pointer-events-none">
+          {["top-0 left-0 border-t border-l", "top-0 right-0 border-t border-r", "bottom-0 left-0 border-b border-l", "bottom-0 right-0 border-b border-r"].map((pos) => (
+            <span key={pos} className={cn("absolute w-5 h-5 border-console/50", pos)} />
+          ))}
+        </div>
+      )}
+
       <LibraryPanel open={libraryOpen} onClose={() => setLibraryOpen(false)} />
     </div>
   )
@@ -462,8 +473,7 @@ export function LoadingScreen() {
       <div className="w-12 h-12 bg-white flex items-center justify-center">
         <span className="text-black text-lg font-extrabold font-display">64</span>
       </div>
-      <p className="mt-5 font-display text-white/90 text-sm font-bold tracking-[0.4em] uppercase pl-1">N64 Flow</p>
-      <div className="mt-7 h-[3px] w-52 bg-white/10 overflow-hidden">
+      <div className="mt-8 h-[3px] w-52 bg-white/10 overflow-hidden">
         <div className="h-full bg-console transition-[width] duration-200 ease-out" style={{ width: `${pct}%` }} />
       </div>
       <div className="mt-3 w-52 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.25em] text-white/30">
