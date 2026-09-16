@@ -136,13 +136,22 @@
     display: flex; align-items: center; gap: 10px; font-size: 11px; letter-spacing: .24em; text-transform: uppercase; color: var(--muted); font-weight: 600;
   }
   .eyebrow .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in srgb, var(--accent) 22%, transparent); }
-  #title {
-    font-size: clamp(40px, 6vw, 76px); font-weight: 800; letter-spacing: -.04em; line-height: .95; margin: 0;
-  }
   #tagline { font-size: 17px; color: var(--muted); margin: 0; font-weight: 400; }
+  .actions { display: flex; gap: 10px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 12px; padding: 10px 22px 10px 10px; border-radius: 999px;
+    font-weight: 600; font-size: 15px; cursor: pointer; border: 1px solid transparent;
+    transition: transform .25s cubic-bezier(.2,.8,.2,1), box-shadow .3s, background .5s;
+  }
+  .btn:hover { transform: translateY(-2px); }
+  .btn:active { transform: scale(.96); }
+  .btn .key { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 9px; }
+  .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 14px 34px color-mix(in srgb, var(--accent) 42%, transparent); }
+  .btn.primary .key { background: rgba(255,255,255,.24); }
+  .btn.ghost { background: var(--glass); border-color: var(--glass-b); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+  .btn.ghost .key { background: var(--fg); color: var(--bg); }
 
-  .swap { animation: swap .5s cubic-bezier(.2,.7,.2,1) both; }
-  @keyframes swap { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: none; } }
+  
 
   /* ---------- rail ---------- */
   #rail {
@@ -296,7 +305,10 @@
   </button>
 
   <section id="info">
-    <h1 id="title">Blast Corps</h1>
+    <div class="actions">
+      <button class="btn primary" id="btnPlay"><span class="key pix">A</span>Play</button>
+      <button class="btn ghost" id="btnDetails"><span class="key pix">Y</span>Details</button>
+    </div>
   </section>
 
   <section id="shelfbar">
@@ -423,7 +435,6 @@ const COLS = 4;
 const $ = (s) => document.querySelector(s);
 const canvas = $('#c');
 const els = {
-  title: $('#title'),
   rail: $('#rail'), drawer: $('#drawer'), boot: $('#boot'), flash: $('#flash'), loader: $('#loader'),
   ldStatus: $('#ldStatus'), ldBar: $('#ldBar'), navL: $('#navL'), navR: $('#navR'),
 };
@@ -718,8 +729,6 @@ addEventListener('resize', fit);
 /* ------------------------------------------------------------------ */
 /*  UI                                                                 */
 /* ------------------------------------------------------------------ */
-function retrigger(el) { el.classList.remove('swap'); void el.offsetWidth; el.classList.add('swap'); }
-
 function buildRail() {
   GAMES.forEach((g, i) => {
     const b = document.createElement('button');
@@ -730,11 +739,9 @@ function buildRail() {
   });
 }
 
-function updateUI(animate = true) {
+function updateUI() {
   const g = GAMES[state.selected];
   document.documentElement.style.setProperty('--accent', g.color);
-  els.title.textContent = g.title;
-  if (animate) retrigger(els.title);
   [...els.rail.children].forEach((p, i) => p.classList.toggle('on', i === state.selected));
   els.navL.classList.toggle('dis', state.selected === 0);
   els.navR.classList.toggle('dis', state.selected === GAMES.length - 1);
@@ -891,6 +898,8 @@ els.navL.addEventListener('click', () => { ensureAudio(); step(-1); });
 els.navR.addEventListener('click', () => { ensureAudio(); step(1); });
 
 $('#btnClose').addEventListener('click', () => setDrawer(false));
+$('#btnPlay').addEventListener('click', () => { ensureAudio(); launch(); });
+$('#btnDetails').addEventListener('click', () => { ensureAudio(); setDrawer(!state.drawer); });
 $('#btnShelf').addEventListener('click', () => { ensureAudio(); setMode(state.mode === 'flow' ? 'shelf' : 'flow'); });
 $('#btnSound').addEventListener('click', () => { ensureAudio(); toggleMute(); });
 $('#btnTheme').addEventListener('click', () => { ensureAudio(); toggleTheme(); });
@@ -905,7 +914,7 @@ tick(); setInterval(tick, 1000);
 /* ------------------------------------------------------------------ */
 async function main() {
   buildRail();
-  updateUI(false);
+  updateUI();
   fit();
   const assets = await loadAssets();
   state.faceYaw = assets.faceYaw;
