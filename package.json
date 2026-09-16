@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --port 3002",
-    "build": "vite build",
+    "build": "node scripts/build.mjs",
     "preview": "vite preview"
   },
   "devDependencies": {
