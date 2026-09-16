@@ -326,7 +326,7 @@ export const useStore = create<Store>()(
         const games = get().library
         for (const g of games) {
           if (!g.coverArt || isResolvedCover(g.coverArt)) {
-            get().updateGame(g.id, { coverArt: NO_IMAGE_COVER, status: "pending" })
+            get().updateGame(g.id, { coverArt: NO_IMAGE_COVER, status: "pending", artError: null })
           }
         }
         startLibraryResolver()
@@ -388,6 +388,7 @@ export const useStore = create<Store>()(
                 ...game,
                 coverArt: refetch ? NO_IMAGE_COVER : (game.coverArt || NO_IMAGE_COVER),
                 status: refetch ? "pending" : (game.status ?? "pending"),
+                artError: refetch ? null : (game.artError ?? null),
               }
             }),
             ...freshSeeds,
@@ -424,7 +425,7 @@ async function resolveLibrary() {
     const next = current.library.find((g) => g.status === "pending")
     if (!next) break
 
-    useStore.getState().updateGame(next.id, { status: "loading" })
+    useStore.getState().updateGame(next.id, { status: "loading", artError: null })
 
     try {
       let ssId = next.ssId
@@ -452,9 +453,10 @@ async function resolveLibrary() {
         coverArt: info.labelUrl || NO_IMAGE_COVER,
       }
       useStore.getState().updateGame(next.id, patch)
-    } catch (err) {
+    } catch (err: any) {
       console.warn(`[retroflow] could not resolve art for "${next.title}":`, err)
-      useStore.getState().updateGame(next.id, { status: "error", coverArt: NO_IMAGE_COVER })
+      const artError: 'keys' | 'failed' = err?.status === 503 ? "keys" : "failed"
+      useStore.getState().updateGame(next.id, { status: "error", coverArt: NO_IMAGE_COVER, artError })
     }
 
     await sleepQueue(350)
@@ -469,7 +471,7 @@ export function startLibraryResolver() {
 
   for (const g of store.library) {
     if (g.status === "loading" || g.status === "error" || isLegacySeedCover(g.coverArt) || !g.coverArt) {
-      store.updateGame(g.id, { status: "pending", coverArt: NO_IMAGE_COVER })
+      store.updateGame(g.id, { status: "pending", coverArt: NO_IMAGE_COVER, artError: null })
     }
   }
 

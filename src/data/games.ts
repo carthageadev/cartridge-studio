@@ -11,6 +11,7 @@ export interface Game {
   color: string
   ssId?: string | null
   status?: 'pending' | 'loading' | 'ready' | 'error'
+  artError?: 'keys' | 'failed' | null
 }
 
 export const initialGames: Game[] = [

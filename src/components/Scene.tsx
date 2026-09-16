@@ -319,6 +319,14 @@ function CartridgeSlot({ game, index, count }: { game: Game; index: number; coun
           </div>
         </Html>
       )}
+      {game.status === "error" && (
+        <Html center position={[0, 0.95, 0.3]} zIndexRange={[12, 0]} distanceFactor={4.5}>
+          <div className="flex items-center gap-1.5 px-2 py-1 bg-black/80 border border-white/15 text-white/60 font-mono text-[9px] tracking-[0.2em] whitespace-nowrap">
+            <span className={game.artError === "keys" ? "w-1.5 h-1.5 bg-red-400" : "w-1.5 h-1.5 bg-white/40"} />
+            {game.artError === "keys" ? "KEYS MISSING" : "ART UNAVAILABLE"}
+          </div>
+        </Html>
+      )}
     </group>
   )
 }
