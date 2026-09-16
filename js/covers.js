@@ -1,53 +1,19 @@
 import * as THREE from "three";
 
-/* Cover art: ScreenScraper lookup with download + local cache.
-   Keys live in ../config.local.js (gitignored, copy config.example.js).
-   Without keys everything stays procedural. If the browser blocks the
-   API (CORS), covers stay procedural too - run a tiny proxy instead. */
+/* Cover art: cartridge labels pulled from ScreenScraper through a small
+   proxy that keeps the keys server side (api/ss.js in production, the
+   vite middleware in development). Results are cached in IndexedDB. */
 
+const ENDPOINT = "/api/ss";
 const SYSTEM = "14";
 const LABEL_ORDER = ["eu", "us", "wor", "ss", "jp"];
 const DB_NAME = "epsilon-covers";
 
-function apiBase() {
-  return window.SS_API || "https://www.screenscraper.fr/api2";
-}
-
-/* Route media downloads through the dev proxy when one is configured,
-   same as the API calls. Media URLs already live under /api2, so keep
-   the path as is. Direct otherwise. */
-function proxify(url) {
-  if (window.SS_API === "/api2") {
-    try {
-      const u = new URL(url);
-      if (u.hostname.includes("screenscraper.fr")) return u.pathname + u.search;
-    } catch { /* fall through to direct */ }
-  }
-  return url;
-}
-
 const mem = new Map();
 let warned = false;
-let configLoaded = false;
+
 function warnOnce(msg) {
   if (!warned) { warned = true; console.warn("[covers] " + msg); }
-}
-
-function loadScript(src) {
-  return new Promise((resolve) => {
-    const s = document.createElement("script");
-    s.src = src;
-    s.onload = resolve;
-    s.onerror = () => resolve();
-    document.head.appendChild(s);
-  });
-}
-
-function creds() {
-  const c = window.SS_CONFIG || {};
-  return c.devid && c.devpassword
-    ? { devid: c.devid, devpassword: c.devpassword, softname: c.softname || "EpsilonGallery" }
-    : null;
 }
 
 function asArray(v) {
@@ -64,12 +30,8 @@ function pickLabel(medias) {
   return null;
 }
 
-async function api(endpoint, params, c) {
-  const qs = new URLSearchParams({
-    devid: c.devid, devpassword: c.devpassword, softname: c.softname,
-    output: "json", ...params,
-  });
-  const res = await fetch(`${apiBase()}/${endpoint}?${qs}`);
+async function api(path, params) {
+  const res = await fetch(`${ENDPOINT}?${new URLSearchParams({ path, ...params })}`);
   if (!res.ok) throw new Error("http " + res.status);
   return res.json();
 }
@@ -102,17 +64,15 @@ async function idbSet(key, blob) {
 }
 
 async function downloadLabel(title) {
-  const c = creds();
-  if (!c) return null;
-  const found = await api("jeuRecherche.php", { systemeid: SYSTEM, recherche: title }, c);
-  const jeux = asArray(found?.response?.jeux?.jeu ?? found?.response?.jeux)
-    .filter((j) => j?.id != null)
-    .filter((j) => j.systeme?.id == null || String(j.systeme.id) === SYSTEM);
+  const found = await api("jeuRecherche.php", { systemeid: SYSTEM, recherche: title });
+  const jeux = asArray(found && found.response && found.response.jeux)
+    .filter((j) => j && j.id != null)
+    .filter((j) => !j.systeme || j.systeme.id == null || String(j.systeme.id) === SYSTEM);
   if (!jeux.length) return null;
-  const info = await api("jeuInfos.php", { gameid: String(jeux[0].id) }, c);
-  const url = pickLabel(info?.response?.jeu?.medias);
+  const info = await api("jeuInfos.php", { gameid: String(jeux[0].id) });
+  const url = pickLabel(info && info.response && info.response.jeu && info.response.jeu.medias);
   if (!url) return null;
-  const res = await fetch(proxify(url));
+  const res = await fetch(url);
   if (!res.ok) throw new Error("http " + res.status);
   return res.blob();
 }
@@ -120,7 +80,6 @@ async function downloadLabel(title) {
 async function coverTexture(title) {
   if (mem.has(title)) return mem.get(title);
   const p = (async () => {
-    if (!configLoaded) { configLoaded = true; await loadScript("./config.local.js"); }
     const cached = await idbGet(title);
     const blob = cached || await downloadLabel(title).catch((err) => {
       warnOnce("cover lookup failed, keeping procedural art (" + err.message + ")");
