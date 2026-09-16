@@ -87,22 +87,10 @@
 
   header {
     position: fixed; top: 0; left: 0; right: 0; z-index: 6;
-    display: flex; justify-content: space-between; align-items: center;
+    display: flex; justify-content: flex-end; align-items: center;
     padding: 22px 28px; pointer-events: none;
   }
   header > * { pointer-events: auto; }
-  .brand { display: flex; align-items: center; gap: 12px; font-weight: 800; letter-spacing: -.02em; font-size: 19px; }
-  .brand .logo {
-    width: 34px; height: 34px; border-radius: 10px; background: var(--fg); position: relative; overflow: hidden;
-    box-shadow: 0 6px 16px rgba(0,0,0,.18);
-  }
-  .brand .logo::after {
-    content: ''; position: absolute; left: 7px; right: 7px; top: 8px; height: 13px; border-radius: 3px;
-    background: var(--accent); transition: background .7s;
-  }
-  .brand .logo::before {
-    content: ''; position: absolute; left: 10px; right: 10px; bottom: 5px; height: 3px; border-radius: 2px; background: rgba(255,255,255,.35);
-  }
   .status { display: flex; align-items: center; gap: 10px; }
   .clock { font-weight: 600; font-size: 15px; letter-spacing: .02em; padding: 0 8px; font-variant-numeric: tabular-nums; }
 
@@ -246,11 +234,11 @@
   }
   #loader.off { opacity: 0; visibility: hidden; }
   .cart-ico {
-    width: 84px; height: 100px; border-radius: 12px 12px 8px 8px; background: #a6a6ad; position: relative; margin: 0 auto 30px;
-    box-shadow: inset 0 -8px 0 rgba(0,0,0,.12), 0 20px 40px rgba(0,0,0,.18); animation: bob 2s ease-in-out infinite;
+    width: 84px; height: 100px; border-radius: 14px 14px 10px 10px; background: var(--fg); position: relative; margin: 0 auto 30px;
+    box-shadow: inset 0 -7px 0 rgba(0,0,0,.32), 0 20px 40px rgba(0,0,0,.18); animation: bob 2s ease-in-out infinite;
   }
-  .cart-ico::before { content: ''; position: absolute; left: 12px; right: 12px; top: 22px; bottom: 26px; border-radius: 5px; background: var(--accent); transition: background .7s; }
-  .cart-ico::after { content: ''; position: absolute; left: 14px; right: 14px; top: 8px; height: 3px; border-radius: 2px; background: rgba(0,0,0,.18); box-shadow: 0 5px 0 rgba(0,0,0,.18); }
+  .cart-ico::before { content: ''; position: absolute; left: 14px; right: 14px; top: 17px; height: 40px; border-radius: 6px; background: var(--accent); transition: background .7s; }
+  .cart-ico::after { content: ''; position: absolute; left: 18px; right: 18px; bottom: 15px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.35); }
   @keyframes bob { 50% { transform: translateY(-8px) rotate(-2deg); } }
   .ld-title { font-size: 13px; letter-spacing: .3em; margin-bottom: 14px; }
   .ld-status { font-size: 13px; color: var(--muted); margin-bottom: 18px; min-height: 18px; }
@@ -277,9 +265,6 @@
 <div id="grain"></div>
 
 <header>
-  <div class="brand">
-    <div class="logo"></div>
-  </div>
   <div class="status">
     <span class="clock" id="clock">--:--</span>
     <button class="ib" id="btnShelf" title="Shelf view (X)">
