@@ -161,14 +161,14 @@
     box-shadow: var(--shadow); transition: opacity .4s, transform .5s;
   }
   .pill {
-    height: 26px; width: 12px; border-radius: 999px; background: var(--c); opacity: .45; border: 0; padding: 0;
+    box-sizing: border-box; height: 26px; width: 12px; border-radius: 999px; background: var(--c); opacity: .45; border: 0; padding: 0;
     cursor: pointer; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: flex-start;
     transition: width .5s cubic-bezier(.2,.8,.2,1), opacity .3s, transform .3s;
     color: #fff; font-size: 12px; font-weight: 600; white-space: nowrap;
   }
-  .pill span { opacity: 0; padding-left: 24px; transition: opacity .3s; }
+  .pill span { opacity: 0; padding-left: 24px; transition: opacity .3s; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
   .pill:hover { opacity: .8; }
-  .pill.on { width: 132px; opacity: 1; }
+  .pill.on { width: 132px; opacity: 1; padding-right: 14px; }
   .pill.on span { opacity: 1; transition-delay: .15s; }
   .pill.on::before { content: ''; position: absolute; left: 9px; top: 50%; width: 8px; height: 8px; margin-top: -4px; border-radius: 50%; background: #fff; }
 
