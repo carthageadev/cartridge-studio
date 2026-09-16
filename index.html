@@ -145,7 +145,7 @@
   }
   .btn:hover { transform: translateY(-2px); }
   .btn:active { transform: scale(.96); }
-  .btn .key { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 9px; }
+  .btn .key { box-sizing: border-box; width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-size: 9px; padding-top: 2px; }
   .btn.primary { background: var(--accent); color: #fff; box-shadow: 0 14px 34px color-mix(in srgb, var(--accent) 42%, transparent); }
   .btn.primary .key { background: rgba(255,255,255,.24); }
   .btn.ghost { background: var(--glass); border-color: var(--glass-b); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
