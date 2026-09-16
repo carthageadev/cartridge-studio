@@ -1,8 +1,8 @@
-import { useEffect, useState, useCallback, useRef } from "react"
+import { useEffect, useState, useCallback, useRef, type CSSProperties } from "react"
 import { useStore } from "../store"
 import {
   Search, Heart, Library, X, BatteryMedium, BatteryLow, BatteryFull,
-  Wifi, Settings, Clock, ChevronUp, ChevronDown, ZoomIn, Plus, Pencil, Trash2, RefreshCw
+  Wifi, Settings, Clock, ChevronUp, ChevronDown, ChevronLeft, ChevronRight, ZoomIn, Plus, Pencil, Trash2, RefreshCw
 } from "lucide-react"
 import { Button, Dialog, DialogContent, DialogTitle, DialogDescription, Slider, Switch } from "./primitives"
 import { useProgress } from "@react-three/drei"
@@ -322,7 +322,7 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
 }
 
 /* -- Cover rail - vertical thumbnail strip synced to the 3D carousel -- */
-function CoverRail({ games, selectedIndex, onSelect }: { games: any[]; selectedIndex: number; onSelect: (i: number) => void }) {
+function CoverRail({ games, selectedIndex, onSelect, accent }: { games: any[]; selectedIndex: number; onSelect: (i: number) => void; accent: string }) {
   const railRef = useRef<HTMLDivElement>(null)
   const itemRefs = useRef<(HTMLButtonElement | null)[]>([])
 
@@ -331,11 +331,12 @@ function CoverRail({ games, selectedIndex, onSelect }: { games: any[]; selectedI
     const item = itemRefs.current[selectedIndex]
     if (!rail || !item) return
     const top = item.offsetTop - rail.clientHeight / 2 + item.clientHeight / 2
-    rail.scrollTo({ top, behavior: "smooth" })
+    const left = item.offsetLeft - rail.clientWidth / 2 + item.clientWidth / 2
+    rail.scrollTo({ top, left, behavior: "smooth" })
   }, [selectedIndex])
 
   return (
-    <div ref={railRef} className="rail-scroll overflow-y-auto overflow-x-hidden max-h-[36vh] flex flex-col items-center gap-1.5 py-0.5">
+    <div ref={railRef} className="rail-scroll overflow-y-auto overflow-x-hidden max-h-[36vh] flex flex-col items-center gap-1.5 py-0.5 max-sm:flex-row max-sm:overflow-x-auto max-sm:overflow-y-hidden max-sm:max-h-none max-sm:max-w-[64vw] max-sm:py-1 max-sm:px-0.5">
       {games.map((g: any, i: number) => (
         <button
           key={g.id}
@@ -343,9 +344,10 @@ function CoverRail({ games, selectedIndex, onSelect }: { games: any[]; selectedI
           onClick={() => onSelect(i)}
           aria-label={g.title}
           title={g.title}
+          style={i === selectedIndex ? ({ "--tw-ring-color": accent } as CSSProperties) : undefined}
           className={cn(
             "relative shrink-0 overflow-hidden transition-all duration-300 ease-out",
-            i === selectedIndex ? "w-10 h-12 ring-2 ring-console opacity-100" : "w-8 h-10 ring-1 ring-white/10 opacity-40 hover:opacity-90"
+            i === selectedIndex ? "w-10 h-12 ring-2 opacity-100" : "w-8 h-10 ring-1 ring-white/10 opacity-40 hover:opacity-90"
           )}
         >
           <img src={g.coverArt} alt="" className="w-full h-full object-cover" draggable={false} />
@@ -433,23 +435,25 @@ export function UI() {
 
       {/* Right centre - game list */}
       {!inspectMode && visibleGames.length > 1 && (
-        <div className="absolute right-5 sm:right-7 top-1/2 -translate-y-1/2 z-20 flex flex-col items-center gap-2 pointer-events-auto">
+        <div className="absolute z-20 flex items-center gap-2 pointer-events-auto left-1/2 bottom-4 -translate-x-1/2 flex-row sm:left-auto sm:right-7 sm:top-1/2 sm:bottom-auto sm:translate-x-0 sm:-translate-y-1/2 sm:flex-col">
           <button
             onClick={prev}
             aria-label="Previous cartridge"
             className="w-10 h-10 shrink-0 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 cursor-pointer"
           >
-            <ChevronUp className="w-5 h-5" />
+            <ChevronUp className="w-5 h-5 hidden sm:block" />
+            <ChevronLeft className="w-5 h-5 sm:hidden" />
           </button>
 
-          <CoverRail games={visibleGames} selectedIndex={selectedIndex} onSelect={setSelectedIndex} />
+          <CoverRail games={visibleGames} selectedIndex={selectedIndex} onSelect={setSelectedIndex} accent={accent} />
 
           <button
             onClick={next}
             aria-label="Next cartridge"
             className="w-10 h-10 shrink-0 border border-white/10 flex items-center justify-center text-white/40 hover:text-white hover:border-white/30 hover:bg-white/5 transition-colors duration-300 cursor-pointer"
           >
-            <ChevronDown className="w-5 h-5" />
+            <ChevronDown className="w-5 h-5 hidden sm:block" />
+            <ChevronRight className="w-5 h-5 sm:hidden" />
           </button>
         </div>
       )}
