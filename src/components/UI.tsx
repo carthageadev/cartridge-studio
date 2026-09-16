@@ -68,7 +68,7 @@ function StatusBar({ inspectMode, setInspectMode, onLibrary }: {
   return (
     <>
       {/* -- Top bar - system mark left, actions centre, status right -- */}
-      <header className="relative z-20 mx-5 sm:mx-8 mt-5 grid grid-cols-3 items-center gap-3 pointer-events-none">
+      <header className="relative z-20 mx-3 sm:mx-8 mt-5 flex items-center justify-between gap-1 pointer-events-none sm:grid sm:grid-cols-3 sm:gap-3">
         <button
           onClick={() => setSettingsOpen(true)}
           aria-label="Open settings"
@@ -81,21 +81,21 @@ function StatusBar({ inspectMode, setInspectMode, onLibrary }: {
         <nav className="flex items-center justify-center gap-1 justify-self-center pointer-events-auto">
           <button
             onClick={() => setInspectMode(!inspectMode)}
-            className={cn("flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors", inspectMode ? "text-console" : "text-white/55 hover:text-white hover:bg-white/5")}
+            className={cn("flex items-center gap-2 px-2 sm:px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors", inspectMode ? "text-console" : "text-white/55 hover:text-white hover:bg-white/5")}
           >
             <ZoomIn className="w-4 h-4" />
             <span className="hidden lg:inline">{inspectMode ? "Exit Zoom" : "Zoom"}</span>
           </button>
           <button
             onClick={onLibrary}
-            className="flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-white/55 hover:text-white hover:bg-white/5 transition-colors"
+            className="flex items-center gap-2 px-2 sm:px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] text-white/55 hover:text-white hover:bg-white/5 transition-colors"
           >
             <Library className="w-4 h-4" />
             <span className="hidden lg:inline">Library</span>
           </button>
         </nav>
 
-        <div className="flex items-center gap-3 sm:gap-4 px-2 py-1.5 font-mono justify-self-end pointer-events-auto">
+        <div className="flex items-center gap-2 sm:gap-4 px-1 sm:px-2 py-1.5 font-mono justify-self-end pointer-events-auto">
           <Wifi className="w-4 h-4 text-white/60 hidden sm:block" />
           <div className="flex items-center gap-1.5 text-white/80 text-sm font-medium whitespace-nowrap"><BatteryIcon level={battery} /><span className="tabular-nums">{battery}%</span></div>
           <div className="w-px h-4 bg-white/10" />
