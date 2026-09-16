@@ -173,9 +173,22 @@
     position: fixed; right: 24px; top: 92px; bottom: 100px; z-index: 7; width: min(400px, calc(100vw - 48px));
     background: var(--glass); backdrop-filter: blur(28px); -webkit-backdrop-filter: blur(28px);
     border: 1px solid var(--glass-b); border-radius: 28px; box-shadow: var(--shadow); padding: 28px;
-    transform: translateX(calc(100% + 48px)); transition: transform .6s cubic-bezier(.2,.8,.2,1); overflow: auto;
+    transform: translateX(calc(100% + 48px)); transition: transform .6s cubic-bezier(.2,.8,.2,1); overflow: hidden;
   }
   #drawer.open { transform: none; }
+  .drawer-body {
+    height: 100%; overflow-y: auto; overflow-x: hidden;
+    scrollbar-width: thin; scrollbar-color: color-mix(in srgb, var(--fg) 16%, transparent) transparent;
+  }
+  .drawer-body::-webkit-scrollbar { width: 10px; }
+  .drawer-body::-webkit-scrollbar-track { background: transparent; }
+  .drawer-body::-webkit-scrollbar-thumb {
+    background: color-mix(in srgb, var(--fg) 16%, transparent);
+    border: 3px solid transparent; border-radius: 99px; background-clip: padding-box;
+  }
+  .drawer-body::-webkit-scrollbar-thumb:hover { background: color-mix(in srgb, var(--fg) 28%, transparent); background-clip: padding-box; }
+  .drawer-body::-webkit-scrollbar-button { display: none; }
+  .drawer-body::-webkit-scrollbar-corner { background: transparent; }
   #drawer h3 { font-size: 26px; font-weight: 800; letter-spacing: -.03em; margin: 6px 0 10px; }
   #drawer p { color: var(--muted); font-size: 15px; line-height: 1.55; margin: 0 0 22px; }
   .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
@@ -314,7 +327,8 @@
     <button class="ib close" id="btnClose" title="Close (B)">
       <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
     </button>
-    <div class="eyebrow"><span class="dot"></span><span id="dGenre">Racing</span></div>
+    <div class="drawer-body">
+      <div class="eyebrow"><span class="dot"></span><span id="dGenre">Racing</span></div>
     <h3 id="dTitle">Neon Kart</h3>
     <p id="dDesc"></p>
     <div class="stats">
@@ -329,6 +343,7 @@
     </div>
     <div class="save"><span>Slot 1 · <b id="dSave"></b></span><small>Auto‑save</small></div>
     <div class="save"><span>Slot 2 · Empty</span><small>-</small></div>
+    </div>
   </aside>
 </div>
 
@@ -358,21 +373,6 @@ import { DRACOLoader } from "three/addons/loaders/DRACOLoader.js";
 import { RoundedBoxGeometry } from "three/addons/geometries/RoundedBoxGeometry.js";
 import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 import { upgradeSticker } from "./js/covers.js";
-
-/* Dev server keys: vite reads the gitignored .env.local next to this
-   file and exposes them here. Static hosting skips this block and uses
-   config.local.js instead. */
-try {
-  const env = (import.meta && import.meta.env) || {};
-  if (env.VITE_SCREENSCRAPER_DEV_ID && env.VITE_SCREENSCRAPER_DEV_PASSWORD) {
-    window.SS_CONFIG = {
-      devid: env.VITE_SCREENSCRAPER_DEV_ID,
-      devpassword: env.VITE_SCREENSCRAPER_DEV_PASSWORD,
-      softname: env.VITE_SCREENSCRAPER_SOFT_NAME || "EpsilonGallery",
-    };
-    window.SS_API = "/api2";
-  }
-} catch { /* plain static server, no env */ }
 
 /* ------------------------------------------------------------------ */
 /*  Assets - local build, models ship with the branch                */
