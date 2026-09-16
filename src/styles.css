@@ -921,15 +921,36 @@ input {
 
 /* -- Scrollbars ---------------------------------------------------------- */
 
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(232, 234, 246, 0.16) transparent;
+}
+
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.14);
+  background: rgba(232, 234, 246, 0.16);
+  border: 3px solid transparent;
   border-radius: 999px;
+  background-clip: padding-box;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.24);
+  background: rgba(124, 108, 255, 0.45);
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
 }
