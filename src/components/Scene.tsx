@@ -355,7 +355,7 @@ function Carousel({ items }: { items: Game[] }) {
 function InspectScene({ game }: { game: Game }) {
   const groupRef = useRef<THREE.Group>(null!)
   const [isDragging, setIsDragging] = useState(false)
-  const rotation = useRef({ x: 0.12, y: 0 })
+  const rotation = useRef({ x: 0.12, y: CARTRIDGE_FACE_ROTATION })
   const lastPointer = useRef({ x: 0, y: 0 })
 
   useEffect(() => {
