@@ -23,12 +23,6 @@ const N64_SYSTEM_ID = '14'
 const REGION_PRIORITY = ['us', 'eu', 'jp', 'ss', 'wor']
 const LABEL_MEDIA_TYPE = 'support-texture'
 
-function maskSecret(value: string): string {
-  if (!value) return ''
-  if (value.length <= 4) return '***'
-  return `${value.slice(0, 2)}***${value.slice(-2)}`
-}
-
 function logScraper(event: string, details: Record<string, unknown>) {
   console.info('[screenscraper]', event, details)
 }
@@ -155,21 +149,9 @@ async function downloadImageBlob(url: string): Promise<Blob | null> {
 }
 
 async function ssRequest(endpoint: string, params: Record<string, string>) {
-  const creds = getCredentials()
-  const qs = new URLSearchParams({
-    devid: creds.devid,
-    devpassword: creds.devpassword,
-    softname: creds.softname,
-    output: 'json',
-    ...params,
-  })
-  logScraper('request', {
-    endpoint,
-    devid: creds.devid,
-    devpassword: maskSecret(creds.devpassword),
-    softname: creds.softname,
-    params,
-  })
+  // Keys stay server-side (api/scraper.ts in production, dev middleware locally).
+  const qs = new URLSearchParams({ output: 'json', ...params })
+  logScraper('request', { endpoint, params })
 
   const res = await fetch(`/api2/${endpoint}?${qs}`)
   const text = await res.text()
@@ -196,62 +178,32 @@ async function ssRequest(endpoint: string, params: Record<string, string>) {
   }
 }
 
+// Keys live server-side now, so the client carries none. These helpers only
+// clear out copies stored by older versions.
 export function getDefaultCredentials(): Credentials {
-  return {
-    devid: import.meta.env.VITE_SCREENSCRAPER_DEV_ID ?? '',
-    devpassword: import.meta.env.VITE_SCREENSCRAPER_DEV_PASSWORD ?? '',
-    softname: import.meta.env.VITE_SCREENSCRAPER_SOFT_NAME ?? 'CartridgeFlow',
-    ssid: '',
-    sspassword: '',
-  }
+  return { devid: '', devpassword: '', softname: 'CartridgeFlow', ssid: '', sspassword: '' }
 }
 
 export function getCredentials(): Credentials {
-  try {
-    const raw = localStorage.getItem(CREDS_KEY)
-    if (raw) {
-      const saved = JSON.parse(raw) as Partial<Credentials>
-      const def = getDefaultCredentials()
-      const creds = {
-        devid: def.devid,
-        devpassword: def.devpassword,
-        softname: def.softname,
-        ssid: '',
-        sspassword: '',
-      }
-      logScraper('credentials_loaded', {
-        devid: creds.devid,
-        devpassword: maskSecret(creds.devpassword),
-        source: 'env_only',
-        ignoredSavedKeys: Object.keys(saved),
-      })
-      return creds
-    }
-  } catch {
-    /* no-op */
-  }
-
-  const creds = getDefaultCredentials()
-  logScraper('credentials_loaded', {
-    devid: creds.devid,
-    devpassword: maskSecret(creds.devpassword),
-    source: 'env_default',
-  })
-  return creds
+  return getDefaultCredentials()
 }
 
-export function saveCredentials(creds: Credentials) {
-  localStorage.setItem(CREDS_KEY, JSON.stringify(creds))
+/** @deprecated keys are no longer stored client-side */
+export function saveCredentials(_creds: Credentials) {
+  clearCredentials()
 }
 
 export function clearCredentials() {
-  localStorage.removeItem(CREDS_KEY)
+  try {
+    localStorage.removeItem(CREDS_KEY)
+  } catch {
+    /* no-op */
+  }
 }
 
-/** Rewrite API media URLs to route through the Vite proxy. */
+/** Rewrite upstream media URLs to the proxied /api2 path, dropping credentials. */
 export function proxify(url: string): string {
   try {
-    const creds = getCredentials()
     let path: string
     let params: URLSearchParams
 
@@ -268,14 +220,11 @@ export function proxify(url: string): string {
       params = new URLSearchParams(qIndex >= 0 ? url.slice(qIndex + 1) : '')
     }
 
-    // Inject current credentials into the media URL so empty ones get replaced
-    if (creds.devid) params.set('devid', creds.devid)
-    if (creds.devpassword) params.set('devpassword', creds.devpassword)
-    if (creds.softname) params.set('softname', creds.softname)
-    params.delete('ssid')
-    params.delete('sspassword')
+    // Credentials must never travel in page URLs; the proxy attaches them.
+    for (const key of ['devid', 'devpassword', 'softname', 'ssid', 'sspassword']) params.delete(key)
 
-    return `${path}?${params.toString()}`
+    const query = params.toString()
+    return query ? `${path}?${query}` : path
   } catch {
     return url
   }

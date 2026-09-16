@@ -1,18 +1,7 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node'
+import { buildUpstreamQuery, credsFromEnv, sanitizeSsJson } from './_ss'
 
 const SCREENSCRAPER_BASE = 'https://api.screenscraper.fr/api2'
-
-// Helper: read env var with or without VITE_ prefix
-const env = (name: string) => process.env[`VITE_${name}`] ?? process.env[name] ?? ''
-
-// Credential env vars - injected server-side so media URLs always authenticate
-const DEFAULT_CREDS: Record<string, string> = {
-  devid: env('SCREENSCRAPER_DEV_ID'),
-  devpassword: env('SCREENSCRAPER_DEV_PASSWORD'),
-  softname: env('SCREENSCRAPER_SOFT_NAME') || 'CartridgeFlow',
-  ssid: env('SCREENSCRAPER_SS_ID'),
-  sspassword: env('SCREENSCRAPER_SS_PASSWORD'),
-}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
   // CORS headers
@@ -30,44 +19,35 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!slug) {
       return res.status(400).json({ error: 'Missing slug parameter' })
     }
-
-    // Build the target URL - forward all query params except 'slug'
-    // Inject credentials when missing or empty
-    const params = new URLSearchParams()
-    for (const [key, value] of Object.entries(req.query)) {
-      if (key === 'slug') continue
-      if (Array.isArray(value)) {
-        value.forEach((v) => params.append(key, v))
-      } else if (value !== undefined) {
-        params.set(key, value)
-      }
+    const creds = credsFromEnv(process.env)
+    if (!creds) {
+      return res.status(503).json({ error: 'ScreenScraper credentials not configured' })
     }
 
-    // Fill in any missing/empty credentials from env vars
-    for (const [key, val] of Object.entries(DEFAULT_CREDS)) {
-      if (val && (!params.get(key) || params.get(key) === '')) {
-        params.set(key, val)
-      }
-    }
+    const params = buildUpstreamQuery(
+      req.query as Record<string, string | string[] | undefined>,
+      creds,
+    )
+    if (!params.get('output') && !slug.startsWith('media')) params.set('output', 'json')
 
-    const targetUrl = `${SCREENSCRAPER_BASE}/${slug}?${params.toString()}`
-
-    const upstream = await fetch(targetUrl, {
-      method: req.method === 'POST' ? 'POST' : 'GET',
+    const isPost = req.method === 'POST'
+    const upstream = await fetch(`${SCREENSCRAPER_BASE}/${slug}?${params.toString()}`, {
+      method: isPost ? 'POST' : 'GET',
       headers: {
         'User-Agent': 'CartridgeFlow/1.0',
-        ...(req.method === 'POST' && req.body ? { 'Content-Type': 'application/json' } : {}),
+        ...(isPost && req.body ? { 'Content-Type': 'application/json' } : {}),
       },
-      ...(req.method === 'POST' && req.body ? { body: JSON.stringify(req.body) } : {}),
+      ...(isPost && req.body ? { body: JSON.stringify(req.body) } : {}),
     })
 
-    const contentType = upstream.headers.get('content-type') || 'application/octet-stream'
+    const contentType = upstream.headers.get('content-type') ?? 'application/octet-stream'
+    if (contentType.includes('json')) {
+      res.setHeader('Content-Type', 'application/json; charset=utf-8')
+      return res.status(upstream.status).json(sanitizeSsJson(await upstream.json()))
+    }
     res.setHeader('Content-Type', contentType)
     res.status(upstream.status)
-
-    // Stream binary data (images, etc.) without corrupting it
-    const buffer = Buffer.from(await upstream.arrayBuffer())
-    return res.send(buffer)
+    return res.send(Buffer.from(await upstream.arrayBuffer()))
   } catch (err: any) {
     console.error('Scraper proxy error:', err)
     return res.status(502).json({ error: err.message || 'Proxy request failed' })
