@@ -385,16 +385,28 @@ export const UVDebugger: React.FC = () => {
         return [...CART_ASSETS, ...extras];
     }, [scrapedLabel, configs]);
 
+    // Upstream media URLs carry credentials; route them through the server
+    // proxy instead, which attaches keys itself.
+    const toProxiedMediaUrl = (raw: string): string => {
+        try {
+            const path = raw.replace(/^https?:\/\/[^/]+\/api2\//, '/api2/');
+            const q = path.indexOf('?');
+            if (q < 0) return path;
+            const params = new URLSearchParams(path.slice(q + 1));
+            for (const k of ['devid', 'devpassword', 'softname', 'ssid', 'sspassword']) params.delete(k);
+            const query = params.toString();
+            return query ? `${path.slice(0, q)}?${query}` : path.slice(0, q);
+        } catch { return raw; }
+    };
+
     // ScreenScraper search
     const handleSearch = async () => {
         if (!searchTitle.trim()) return;
         setIsSearching(true);
         setSearchResults([]);
         try {
-            const devid = import.meta.env.VITE_SCREENSCRAPER_DEV_ID || '';
-            const devpw = import.meta.env.VITE_SCREENSCRAPER_DEV_PASSWORD || '';
-            const softname = import.meta.env.VITE_SCREENSCRAPER_SOFT_NAME || 'CartridgeStudio';
-            const url = `/api2/jeuRecherche.php?devid=${devid}&devpassword=${devpw}&softname=${softname}&output=json&recherche=${encodeURIComponent(searchTitle)}&systemeid=${searchSystem}`;
+            // Keys stay server-side; the proxy attaches them.
+            const url = `/api2/jeuRecherche.php?output=json&recherche=${encodeURIComponent(searchTitle)}&systemeid=${searchSystem}`;
             const res = await fetch(url);
             const text = await res.text();
             if (!text) { alert('Empty response from ScreenScraper.'); setIsSearching(false); return; }
@@ -414,10 +426,7 @@ export const UVDebugger: React.FC = () => {
     const handleSelectGame = async (gameId: string, gameName: string) => {
         setIsSearching(true);
         try {
-            const devid = import.meta.env.VITE_SCREENSCRAPER_DEV_ID || '';
-            const devpw = import.meta.env.VITE_SCREENSCRAPER_DEV_PASSWORD || '';
-            const softname = import.meta.env.VITE_SCREENSCRAPER_SOFT_NAME || 'CartridgeStudio';
-            const url = `/api2/jeuInfos.php?devid=${devid}&devpassword=${devpw}&softname=${softname}&output=json&gameid=${gameId}`;
+            const url = `/api2/jeuInfos.php?output=json&gameid=${gameId}`;
             const res = await fetch(url);
             const data = await res.json();
             let medias = data?.response?.jeu?.medias;
@@ -437,8 +446,7 @@ export const UVDebugger: React.FC = () => {
             }
             if (!best) best = accepted.find((m: any) => m.type === 'support-texture') || accepted[0];
             if (best?.url) {
-                const proxyUrl = best.url.replace(/^https?:\/\/[^/]+\/api2\//, '/api2/');
-                applyBoxart(proxyUrl, gameName);
+                applyBoxart(toProxiedMediaUrl(best.url), gameName);
             } else {
                 alert('No valid texture URL found.');
             }
@@ -477,7 +485,8 @@ export const UVDebugger: React.FC = () => {
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '8px' }}>
                         <span style={{ fontSize: '18px', fontWeight: 900, color: '#fbbf24', letterSpacing: '-0.5px' }}>
                             CART STUDIO
-                        </span>
+                        </span>
+
                     </div>
                     <p className="retro-mono" style={{ fontSize: '8px', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', marginTop: '5px', letterSpacing: '0.1em' }}>model.glb</p>
                 </div>
