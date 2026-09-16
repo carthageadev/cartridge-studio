@@ -455,7 +455,7 @@ async function resolveLibrary() {
       useStore.getState().updateGame(next.id, patch)
     } catch (err: any) {
       console.warn(`[retroflow] could not resolve art for "${next.title}":`, err)
-      const artError: 'keys' | 'failed' = err?.status === 503 ? "keys" : "failed"
+      const artError: 'keys' | 'failed' = err?.status === 503 || err?.status === 401 ? "keys" : "failed"
       useStore.getState().updateGame(next.id, { status: "error", coverArt: NO_IMAGE_COVER, artError })
     }
 

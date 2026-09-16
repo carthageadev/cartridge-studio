@@ -65,7 +65,10 @@ async function ssRequest(endpoint: string, params: Record<string, string>) {
   try {
     return JSON.parse(text)
   } catch {
-    throw new Error(text.slice(0, 160) || 'Invalid ScreenScraper response')
+    // ScreenScraper answers rejected keys as plain text with HTTP 200.
+    const err = new Error(text.slice(0, 160) || 'Invalid ScreenScraper response')
+    ;(err as any).status = 401
+    throw err
   }
 }
 
