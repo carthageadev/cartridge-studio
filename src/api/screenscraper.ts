@@ -50,14 +50,8 @@ function pickLabelUrl(medias: any): string | null {
 }
 
 async function ssRequest(endpoint: string, params: Record<string, string>) {
-  const creds = getCredentials()
-  const qs = new URLSearchParams({
-    devid: creds.devid,
-    devpassword: creds.devpassword,
-    softname: creds.softname,
-    output: 'json',
-    ...params,
-  })
+  // Keys stay server-side (api/ss.ts in production, dev middleware locally).
+  const qs = new URLSearchParams({ output: 'json', ...params })
 
   const res = await fetch(`/api2/${endpoint}?${qs}`)
   const text = await res.text()
@@ -75,47 +69,39 @@ async function ssRequest(endpoint: string, params: Record<string, string>) {
   }
 }
 
+// Keys live server-side now, so the client carries none. These helpers only
+// clear out copies stored by older versions.
 export function getDefaultCredentials(): Credentials {
-  return {
-    devid: import.meta.env.VITE_SCREENSCRAPER_DEV_ID ?? '',
-    devpassword: import.meta.env.VITE_SCREENSCRAPER_DEV_PASSWORD ?? '',
-    softname: import.meta.env.VITE_SCREENSCRAPER_SOFT_NAME ?? 'CartridgeFlow',
-  }
+  return { devid: '', devpassword: '', softname: 'CartridgeFlow' }
 }
 
 export function getCredentials(): Credentials {
-  try {
-    const raw = localStorage.getItem(CREDS_KEY)
-    if (raw) {
-      const saved = JSON.parse(raw) as Partial<Credentials>
-      const def = getDefaultCredentials()
-      return {
-        devid: saved.devid || def.devid,
-        devpassword: saved.devpassword || def.devpassword,
-        softname: saved.softname || def.softname,
-      }
-    }
-  } catch {
-    /* no-op */
-  }
-
   return getDefaultCredentials()
 }
 
-export function saveCredentials(creds: Credentials) {
-  localStorage.setItem(CREDS_KEY, JSON.stringify(creds))
+/** @deprecated keys are no longer stored client-side */
+export function saveCredentials(_creds: Credentials) {
+  clearCredentials()
 }
 
 export function clearCredentials() {
-  localStorage.removeItem(CREDS_KEY)
+  try {
+    localStorage.removeItem(CREDS_KEY)
+  } catch {
+    /* no-op */
+  }
 }
 
-/** Rewrite API media URLs to route through the Vite proxy. */
+/** Rewrite upstream media URLs to the proxied /api2 path, dropping credentials. */
 export function proxify(url: string): string {
   try {
     const parsed = new URL(url)
     const path = parsed.pathname.startsWith('/api2') ? parsed.pathname : `/api2${parsed.pathname}`
-    return `${path}${parsed.search}`
+    const params = new URLSearchParams(parsed.search)
+    // Credentials must never travel in page URLs; the proxy attaches them.
+    for (const key of ['devid', 'devpassword', 'softname', 'ssid', 'sspassword']) params.delete(key)
+    const query = params.toString()
+    return query ? `${path}?${query}` : path
   } catch {
     return url
   }
