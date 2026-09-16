@@ -46,12 +46,10 @@ function KeyGlyph({ children }: { children: React.ReactNode }) {
 }
 
 /* -- Top status bar + settings -- */
-function StatusBar({ inspectMode, setInspectMode, onLibrary, isFavorite, onToggleFavorite }: {
+function StatusBar({ inspectMode, setInspectMode, onLibrary }: {
   inspectMode: boolean
   setInspectMode: (v: boolean) => void
   onLibrary: () => void
-  isFavorite: boolean
-  onToggleFavorite: () => void
 }) {
   const [time, setTime] = useState(() => new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }))
   const [battery] = useState(84)
@@ -81,13 +79,6 @@ function StatusBar({ inspectMode, setInspectMode, onLibrary, isFavorite, onToggl
         </button>
 
         <nav className="flex items-center justify-center gap-1 justify-self-center pointer-events-auto">
-          <button
-            onClick={onToggleFavorite}
-            className={cn("flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors", isFavorite ? "text-console" : "text-white/55 hover:text-white hover:bg-white/5")}
-          >
-            <Heart className={cn("w-4 h-4", isFavorite && "fill-current")} />
-            <span className="hidden lg:inline">{isFavorite ? "Favorited" : "Favorite"}</span>
-          </button>
           <button
             onClick={() => setInspectMode(!inspectMode)}
             className={cn("flex items-center gap-2 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.15em] transition-colors", inspectMode ? "text-console" : "text-white/55 hover:text-white hover:bg-white/5")}
@@ -412,20 +403,21 @@ export function UI() {
         inspectMode={inspectMode}
         setInspectMode={setInspectMode}
         onLibrary={() => setLibraryOpen(true)}
-        isFavorite={favorites.includes(game.id)}
-        onToggleFavorite={() => toggleFavorite(game.id)}
       />
 
       {/* Left centre - game readout */}
       <div className={cn("absolute left-6 sm:left-10 top-1/2 -translate-y-1/2 z-20 max-w-xl transition-opacity duration-300 ease-out", infoVisible ? "opacity-100" : "opacity-0")}>
-        <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.25em] text-white/35">
-          <span style={{ color: accent }}>{game.genre}</span>
-          <span className="w-px h-3 bg-white/15" />
-          <span>{game.year}</span>
-          <span className="w-px h-3 bg-white/15" />
-          <span>{game.players}</span>
-          <span className="w-px h-3 bg-white/15" />
-          <span className="tabular-nums">{String(selectedIndex + 1).padStart(2, "0")} / {String(visibleGames.length).padStart(2, "0")}</span>
+        <div className="flex items-center gap-2.5 font-mono text-[11px] uppercase tracking-[0.25em] text-white/35 min-w-0 max-w-[54vw] sm:max-w-none">
+          <button
+            onClick={() => toggleFavorite(game.id)}
+            aria-label="Toggle favorite"
+            title="Favorite"
+            style={favorites.includes(game.id) ? { color: accent } : undefined}
+            className={cn("shrink-0 transition-colors hover:text-white", favorites.includes(game.id) && "fill-current")}
+          >
+            <Heart className="w-3.5 h-3.5" />
+          </button>
+          <span style={{ color: accent }} className="truncate min-w-0">{game.genre}</span>
         </div>
 
         <h2 className="mt-3 font-display text-white text-4xl sm:text-6xl font-bold tracking-tight leading-none">{game.title}</h2>
