@@ -71,9 +71,14 @@ function StatusBar({ inspectMode, setInspectMode, onLibrary, isFavorite, onToggl
     <>
       {/* -- Top bar - system mark left, actions centre, status right -- */}
       <header className="relative z-20 mx-5 sm:mx-8 mt-5 grid grid-cols-3 items-center gap-3 pointer-events-none">
-        <div className="w-9 h-9 bg-white flex items-center justify-center justify-self-start">
+        <button
+          onClick={() => setSettingsOpen(true)}
+          aria-label="Open settings"
+          title="Settings"
+          className="w-9 h-9 bg-white flex items-center justify-center justify-self-start pointer-events-auto hover:bg-console transition-colors cursor-pointer"
+        >
           <span className="text-black text-sm font-extrabold font-display">64</span>
-        </div>
+        </button>
 
         <nav className="flex items-center justify-center gap-1 justify-self-center pointer-events-auto">
           <button
@@ -99,12 +104,11 @@ function StatusBar({ inspectMode, setInspectMode, onLibrary, isFavorite, onToggl
           </button>
         </nav>
 
-        <div className="flex items-center gap-2.5 px-2 py-1.5 font-mono justify-self-end pointer-events-auto">
+        <div className="flex items-center gap-3 sm:gap-4 px-2 py-1.5 font-mono justify-self-end pointer-events-auto">
           <Wifi className="w-4 h-4 text-white/60 hidden sm:block" />
-          <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium"><BatteryIcon level={battery} /><span className="hidden sm:inline">{battery}%</span></div>
-          <div className="w-px h-4 bg-white/10 hidden sm:block" />
-          <div className="flex items-center gap-1.5 text-white/80 text-xs font-medium"><Clock className="w-3.5 h-3.5" /><span className="tabular-nums">{time}</span></div>
-          <button onClick={() => setSettingsOpen(true)} className="ml-0.5 p-1.5 hover:bg-white/10 text-white/60 hover:text-white transition-colors" aria-label="Settings"><Settings className="w-4 h-4" /></button>
+          <div className="flex items-center gap-1.5 text-white/80 text-sm font-medium whitespace-nowrap"><BatteryIcon level={battery} /><span className="tabular-nums">{battery}%</span></div>
+          <div className="w-px h-4 bg-white/10" />
+          <div className="flex items-center gap-1.5 text-white/80 text-sm font-medium whitespace-nowrap"><Clock className="w-4 h-4" /><span className="tabular-nums">{time}</span></div>
         </div>
       </header>
 
