@@ -213,14 +213,13 @@ function LibraryPanel({ open, onClose }: { open: boolean; onClose: () => void })
         <div className="flex flex-col h-full">
 
           {/* Top bar */}
-          <div className="flex items-center justify-between gap-4 pb-4 border-b border-white/[0.07]">
+          <div className="flex items-center justify-between gap-3 pb-4 border-b border-white/[0.07] flex-wrap pr-8">
             <div className="flex items-baseline gap-3 min-w-0">
-              <DialogTitle className="flex items-center gap-2 text-lg font-display tracking-wide"><Library className="w-4 h-4 text-console" /> Cartridge Library</DialogTitle>
-              <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/35 whitespace-nowrap">{visibleGames.length} titles</span>
+              <DialogTitle className="flex items-center gap-2 text-base sm:text-lg font-display tracking-wide truncate"><Library className="w-4 h-4 shrink-0 text-console" /> Cartridge Library</DialogTitle>
+              <span className="font-mono text-[10px] uppercase tracking-[0.25em] text-white/35 whitespace-nowrap shrink-0">{visibleGames.length} titles</span>
             </div>
             <div className="flex items-center gap-2 shrink-0">
               <Button onClick={openAdd} className="text-xs"><Plus className="w-4 h-4" /> Add Game</Button>
-              <button onClick={onClose} aria-label="Close" className="p-2 text-white/40 hover:text-white hover:bg-white/5 transition-colors"><X className="w-4 h-4" /></button>
             </div>
           </div>
 
