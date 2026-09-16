@@ -1,8 +1,9 @@
 import type { GameMeta, SearchResult } from '../types'
 
 // -- Credentials ---------------------------------------------------------------
-// Defaults come from .env.local (VITE_SCREENSCRAPER_*); the settings panel can
-// override them at runtime via localStorage.
+// Keys live server-side now (api/ss.ts in production, dev middleware locally),
+// so the client carries none. These helpers only clear out copies stored by
+// older versions.
 
 const CREDS_KEY = 'retroflow.creds.v1'
 
@@ -13,37 +14,24 @@ export interface Credentials {
 }
 
 export function getDefaultCredentials(): Credentials {
-  return {
-    devid: import.meta.env.VITE_SCREENSCRAPER_DEV_ID ?? '',
-    devpassword: import.meta.env.VITE_SCREENSCRAPER_DEV_PASSWORD ?? '',
-    softname: import.meta.env.VITE_SCREENSCRAPER_SOFT_NAME ?? 'CartridgeFlow',
-  }
+  return { devid: '', devpassword: '', softname: 'CartridgeStudio' }
 }
 
 export function getCredentials(): Credentials {
-  try {
-    const raw = localStorage.getItem(CREDS_KEY)
-    if (raw) {
-      const saved = JSON.parse(raw) as Partial<Credentials>
-      const def = getDefaultCredentials()
-      return {
-        devid: saved.devid || def.devid,
-        devpassword: saved.devpassword || def.devpassword,
-        softname: saved.softname || def.softname,
-      }
-    }
-  } catch {
-    /* fall through to defaults */
-  }
   return getDefaultCredentials()
 }
 
-export function saveCredentials(creds: Credentials) {
-  localStorage.setItem(CREDS_KEY, JSON.stringify(creds))
+/** @deprecated keys are no longer stored client-side */
+export function saveCredentials(_creds: Credentials) {
+  clearCredentials()
 }
 
 export function clearCredentials() {
-  localStorage.removeItem(CREDS_KEY)
+  try {
+    localStorage.removeItem(CREDS_KEY)
+  } catch {
+    /* no-op */
+  }
 }
 
 // -- Core fetch ----------------------------------------------------------------
@@ -52,14 +40,8 @@ const N64_SYSTEM_ID = '14'
 const REGION_PRIORITY = ['wor', 'us', 'eu', 'ss', 'jp']
 
 async function ssRequest(endpoint: string, params: Record<string, string>) {
-  const creds = getCredentials()
-  const qs = new URLSearchParams({
-    devid: creds.devid,
-    devpassword: creds.devpassword,
-    softname: creds.softname,
-    output: 'json',
-    ...params,
-  })
+  // Keys stay server-side; the proxy attaches them.
+  const qs = new URLSearchParams({ output: 'json', ...params })
   const res = await fetch(`/api2/${endpoint}?${qs}`)
   const text = await res.text()
   if (!res.ok) {
@@ -76,12 +58,16 @@ async function ssRequest(endpoint: string, params: Record<string, string>) {
 }
 
 /** Rewrite an absolute ScreenScraper URL to a relative /api2/... path so it
- *  goes through the Vite dev proxy (CORS bypass, per spec 3.4). */
+ *  goes through the server proxy (CORS bypass, per spec 3.4), dropping any
+ *  credentials. The proxy attaches them server-side. */
 export function proxify(url: string): string {
   try {
     const u = new URL(url)
     const path = u.pathname.startsWith('/api2') ? u.pathname : `/api2${u.pathname}`
-    return path + u.search
+    const params = new URLSearchParams(u.search)
+    for (const key of ['devid', 'devpassword', 'softname', 'ssid', 'sspassword']) params.delete(key)
+    const query = params.toString()
+    return query ? `${path}?${query}` : path
   } catch {
     return url
   }
