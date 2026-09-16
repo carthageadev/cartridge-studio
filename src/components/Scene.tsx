@@ -413,16 +413,31 @@ function Particles() {
 function CameraController({ inspectMode }: { inspectMode: boolean }) {
   const { camera } = useThree()
   const cameraZoom = useStore((s) => s.settings.cameraZoom)
+  const anim = useRef({ p: 0, hold: 0 })
+  const lookCur = useRef(new THREE.Vector3(CAROUSEL_CENTER_X - 1.7, 1.15, 0))
 
-  useFrame((_, delta) => {
-    const browseZ = cameraZoom        // user-tunable browse distance
-    const browseY = 2.5 + (cameraZoom - 9) * 0.12
-    const targetPos = inspectMode
-      ? new THREE.Vector3(0, 0.5, 5.2)
-      : new THREE.Vector3(0, browseY, browseZ)
-    camera.position.lerp(targetPos, 2.5 * delta)
-    const targetLook = inspectMode ? new THREE.Vector3(0, 0.35, 0) : new THREE.Vector3(CAROUSEL_CENTER_X - 1.7, 1.15, 0)
-    camera.lookAt(targetLook)
+  // Restart the hold each toggle so motion begins as the veil lifts.
+  useEffect(() => { anim.current.hold = 0.25 }, [inspectMode])
+
+  useFrame((_, rawDelta) => {
+    const delta = Math.min(rawDelta, 0.05)
+    const browsePos = new THREE.Vector3(0, 2.5 + (cameraZoom - 9) * 0.12, cameraZoom)
+    const inspectPos = new THREE.Vector3(0, 0.5, 5.2)
+    const browseLook = new THREE.Vector3(CAROUSEL_CENTER_X - 1.7, 1.15, 0)
+    const inspectLook = new THREE.Vector3(0, 0.35, 0)
+
+    if (anim.current.hold > 0) {
+      anim.current.hold -= delta
+    } else {
+      const rate = delta / 1.1
+      anim.current.p = THREE.MathUtils.clamp(anim.current.p + (inspectMode ? rate : -rate), 0, 1)
+    }
+    const e = anim.current.p
+    const eased = e < 0.5 ? 4 * e * e * e : 1 - Math.pow(-2 * e + 2, 3) / 2
+
+    camera.position.lerpVectors(browsePos, inspectPos, eased)
+    lookCur.current.lerp(new THREE.Vector3().lerpVectors(browseLook, inspectLook, eased), 1 - Math.exp(-6 * delta))
+    camera.lookAt(lookCur.current)
   })
   return null
 }
