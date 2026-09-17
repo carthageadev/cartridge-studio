@@ -19,14 +19,11 @@ export interface SsCreds {
 }
 
 export function credsFromEnv(env: Record<string, string | undefined>): SsCreds | null {
-  const devid = env.SCREENSCRAPER_DEV_ID ?? env.VITE_SCREENSCRAPER_DEV_ID
-  const devpassword = env.SCREENSCRAPER_DEV_PASSWORD ?? env.VITE_SCREENSCRAPER_DEV_PASSWORD
-  if (!devid || !devpassword) return null
-  return {
-    devid,
-    devpassword,
-    softname: env.SCREENSCRAPER_SOFT_NAME ?? env.VITE_SCREENSCRAPER_SOFT_NAME ?? 'CartridgeFlow',
-  }
+  const devid = env.SCREENSCRAPER_DEV_ID
+  const devpassword = env.SCREENSCRAPER_DEV_PASSWORD
+  const softname = env.SCREENSCRAPER_SOFT_NAME
+  if (!devid || !devpassword || !softname) return null
+  return { devid, devpassword, softname }
 }
 
 /** Copy caller params minus any credential keys, then attach server creds. */
@@ -99,7 +96,7 @@ export default async function handler(req: any, res: any) {
     if (!params.get('output') && !slug.startsWith('media')) params.set('output', 'json')
 
     const upstream = await fetch(`${SCREENSCRAPER_BASE}/${slug}?${params.toString()}`, {
-      headers: { 'User-Agent': 'CartridgeFlow/1.0' },
+      headers: { 'User-Agent': `${creds.softname}/1.0` },
     })
 
     const contentType = upstream.headers.get('content-type') ?? 'application/octet-stream'

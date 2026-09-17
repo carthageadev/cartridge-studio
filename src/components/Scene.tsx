@@ -17,7 +17,7 @@ import { useStore } from "../store"
 // Falls back to local /public paths if the server returns nothing.
 
 // Resolved 3D base URL, set at startup from /api/config.
-let _3dBaseUrl = (typeof import.meta !== 'undefined' ? (import.meta as unknown as { env: Record<string, string> }).env?.VITE_3D_BASE_URL?.trim() : '') || ''
+let _3dBaseUrl = ''
 function assetUrl(path: string): string {
   return _3dBaseUrl ? `${_3dBaseUrl}${path}` : path
 }

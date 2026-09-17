@@ -14,6 +14,6 @@ export default async function handler(_req: any, res: any) {
     return res.status(200).end()
   }
 
-  const baseUrl = process.env.THREE_D_BASE_URL ?? ''
+  const baseUrl = process.env.THREE_D_BASE_URL
   return res.status(200).json({ baseUrl })
 }
