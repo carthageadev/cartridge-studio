@@ -1,6 +1,6 @@
 import { defineConfig, loadEnv } from 'vite'
 import react from '@vitejs/plugin-react'
-import { buildUpstreamQuery, credsFromEnv, sanitizeSsJson } from './api/_ss'
+import { buildUpstreamQuery, credsFromEnv, sanitizeSsJson } from './api/ss'
 
 // All ScreenScraper traffic (API + media images) is routed through /api2 so the
 // browser never hits screenscraper.fr cross-origin. Keys are attached by the

@@ -2,29 +2,10 @@ import type { GameMeta, SearchResult } from '../types'
 
 // -- Credentials ---------------------------------------------------------------
 // Keys live server-side now (api/ss.ts in production, dev middleware locally),
-// so the client carries none. These helpers only clear out copies stored by
-// older versions.
+// so the client carries none. This helper only clears copies stored by older
+// versions.
 
 const CREDS_KEY = 'retroflow.creds.v1'
-
-export interface Credentials {
-  devid: string
-  devpassword: string
-  softname: string
-}
-
-export function getDefaultCredentials(): Credentials {
-  return { devid: '', devpassword: '', softname: 'CartridgeStudio' }
-}
-
-export function getCredentials(): Credentials {
-  return getDefaultCredentials()
-}
-
-/** @deprecated keys are no longer stored client-side */
-export function saveCredentials(_creds: Credentials) {
-  clearCredentials()
-}
 
 export function clearCredentials() {
   try {
