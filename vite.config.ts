@@ -4,7 +4,7 @@ import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig, loadEnv } from "vite";
 import { viteSingleFile } from "vite-plugin-singlefile";
-import { buildUpstreamQuery, credsFromEnv, sanitizeSsJson } from "./api/_ss";
+import { buildUpstreamQuery, credsFromEnv, sanitizeSsJson } from "./api/scraper";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

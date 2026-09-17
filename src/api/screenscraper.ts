@@ -1,11 +1,3 @@
-export interface Credentials {
-  devid: string
-  devpassword: string
-  softname: string
-  ssid: string
-  sspassword: string
-}
-
 export interface SearchResult {
   id: string
   name: string
@@ -178,21 +170,8 @@ async function ssRequest(endpoint: string, params: Record<string, string>) {
   }
 }
 
-// Keys live server-side now, so the client carries none. These helpers only
-// clear out copies stored by older versions.
-export function getDefaultCredentials(): Credentials {
-  return { devid: '', devpassword: '', softname: 'CartridgeFlow', ssid: '', sspassword: '' }
-}
-
-export function getCredentials(): Credentials {
-  return getDefaultCredentials()
-}
-
-/** @deprecated keys are no longer stored client-side */
-export function saveCredentials(_creds: Credentials) {
-  clearCredentials()
-}
-
+// Keys live server-side now, so the client carries none. This helper only
+// clears copies stored by older versions.
 export function clearCredentials() {
   try {
     localStorage.removeItem(CREDS_KEY)
