@@ -4,8 +4,9 @@ const CRED_KEYS = new Set(["devid", "devpassword", "softname", "ssid", "sspasswo
 export function credsFromEnv(env) {
   const devid = env.SCREENSCRAPER_DEV_ID;
   const devpassword = env.SCREENSCRAPER_DEV_PASSWORD;
-  if (!devid || !devpassword) return null;
-  return { devid, devpassword, softname: env.SCREENSCRAPER_SOFT_NAME || "EpsilonGallery" };
+  const softname = env.SCREENSCRAPER_SOFT_NAME;
+  if (!devid || !devpassword || !softname) return null;
+  return { devid, devpassword, softname };
 }
 
 function upstreamQuery(params, creds) {
